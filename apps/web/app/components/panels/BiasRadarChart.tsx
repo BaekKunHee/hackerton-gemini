@@ -1,32 +1,7 @@
 'use client';
 
-import dynamic from 'next/dynamic';
+import { useEffect, useState } from 'react';
 import type { BiasScore, BiasType } from '@/lib/types';
-
-const ResponsiveContainer = dynamic(
-  () => import('recharts').then((mod) => mod.ResponsiveContainer),
-  { ssr: false }
-);
-const RadarChart = dynamic(
-  () => import('recharts').then((mod) => mod.RadarChart),
-  { ssr: false }
-);
-const PolarGrid = dynamic(
-  () => import('recharts').then((mod) => mod.PolarGrid),
-  { ssr: false }
-);
-const PolarAngleAxis = dynamic(
-  () => import('recharts').then((mod) => mod.PolarAngleAxis),
-  { ssr: false }
-);
-const PolarRadiusAxis = dynamic(
-  () => import('recharts').then((mod) => mod.PolarRadiusAxis),
-  { ssr: false }
-);
-const Radar = dynamic(
-  () => import('recharts').then((mod) => mod.Radar),
-  { ssr: false }
-);
 
 interface BiasRadarChartProps {
   biasScores: BiasScore[];
@@ -45,12 +20,53 @@ const biasLabels: Record<BiasType, string> = {
   urgency_instinct: '긴급성',
 };
 
+interface RechartsModule {
+  ResponsiveContainer: typeof import('recharts').ResponsiveContainer;
+  RadarChart: typeof import('recharts').RadarChart;
+  PolarGrid: typeof import('recharts').PolarGrid;
+  PolarAngleAxis: typeof import('recharts').PolarAngleAxis;
+  PolarRadiusAxis: typeof import('recharts').PolarRadiusAxis;
+  Radar: typeof import('recharts').Radar;
+}
+
 export default function BiasRadarChart({ biasScores }: BiasRadarChartProps) {
+  const [recharts, setRecharts] = useState<RechartsModule | null>(null);
+
+  useEffect(() => {
+    import('recharts').then((mod) => {
+      setRecharts({
+        ResponsiveContainer: mod.ResponsiveContainer,
+        RadarChart: mod.RadarChart,
+        PolarGrid: mod.PolarGrid,
+        PolarAngleAxis: mod.PolarAngleAxis,
+        PolarRadiusAxis: mod.PolarRadiusAxis,
+        Radar: mod.Radar,
+      });
+    });
+  }, []);
+
   const chartData = biasScores.map((bs) => ({
     bias: biasLabels[bs.type],
     score: Math.round(bs.score * 100),
     fullMark: 100,
   }));
+
+  if (!recharts) {
+    return (
+      <div className="w-full h-64 flex items-center justify-center">
+        <div className="animate-shimmer rounded-full h-48 w-48" />
+      </div>
+    );
+  }
+
+  const {
+    ResponsiveContainer,
+    RadarChart,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
+    Radar,
+  } = recharts;
 
   return (
     <div className="w-full h-64">
