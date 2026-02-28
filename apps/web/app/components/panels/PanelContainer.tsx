@@ -17,7 +17,7 @@ interface PanelContainerProps {
   biasLoading?: boolean;
 }
 
-const panelTabs = ['소스 검증', '다른 관점', '편향 분석'];
+const panelTabs = ['소스 검증', '편향 분석', '다른 관점'];
 
 export default function PanelContainer({
   source,
@@ -31,7 +31,7 @@ export default function PanelContainer({
 
   return (
     <>
-      {/* Desktop: 3-column grid */}
+      {/* Desktop: 3-column grid - 순서: Source(1) → Bias(2) → Perspective(3) */}
       <div className="hidden lg:grid lg:grid-cols-3 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,14 +45,14 @@ export default function PanelContainer({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <PerspectivePanel data={perspective} isLoading={perspectiveLoading} />
+          <BiasPanel data={bias} isLoading={biasLoading} />
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <BiasPanel data={bias} isLoading={biasLoading} />
+          <PerspectivePanel data={perspective} isLoading={perspectiveLoading} />
         </motion.div>
       </div>
 
@@ -78,13 +78,13 @@ export default function PanelContainer({
               <SourcePanel data={source} isLoading={sourceLoading} />
             )}
             {activeTab === 1 && (
+              <BiasPanel data={bias} isLoading={biasLoading} />
+            )}
+            {activeTab === 2 && (
               <PerspectivePanel
                 data={perspective}
                 isLoading={perspectiveLoading}
               />
-            )}
-            {activeTab === 2 && (
-              <BiasPanel data={bias} isLoading={biasLoading} />
             )}
           </motion.div>
         </AnimatePresence>

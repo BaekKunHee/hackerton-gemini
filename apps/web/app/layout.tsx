@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'Flipside - 같은 팩트, 다른 결론',
   description:
-    '논쟁에서 이기고 싶으면, 먼저 상대를 이해하세요. AI 기반 비판적 사고 분석 플랫폼.',
+    '진짜 설득은 상대를 이해하는 것에서 시작됩니다. AI 기반 비판적 사고 분석 플랫폼.',
 };
 
 export default function RootLayout({

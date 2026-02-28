@@ -73,7 +73,7 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
           Steel Man 분석
         </h3>
         <span className="ml-auto text-[10px] text-[var(--text-muted)] bg-white/[0.04] rounded-full px-2.5 py-0.5">
-          논쟁 강화
+          관점 확장
         </span>
       </div>
 
@@ -151,7 +151,7 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
           className="rounded-xl bg-[var(--green-400)]/5 border border-[var(--green-400)]/20 p-4"
         >
           <p className="text-[11px] text-[var(--green-400)] mb-2 font-medium uppercase tracking-wider">
-            더 강한 논쟁을 위한 제안
+            더 깊은 이해를 위한 제안
           </p>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
             {steelMan.strengthenedArgument}

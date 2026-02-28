@@ -71,7 +71,9 @@ def build_bias_panel(
     claims: list,
     expanded_topics: list = None,
     related_content: list = None,
-    alternative_framing: str = None
+    alternative_framing: str = None,
+    user_instincts: list = None,
+    information_biases: list = None,
 ) -> dict:
     """Build BiasPanelData matching frontend type."""
     bias_scores = []
@@ -99,12 +101,20 @@ def build_bias_panel(
         "textExamples": text_examples,
     }
 
+    # Add new Agent A structure: user instincts (Hans Rosling 10)
+    if user_instincts:
+        result["userInstincts"] = convert_keys(user_instincts)
+
+    # Add new Agent A structure: information/media biases
+    if information_biases:
+        result["informationBiases"] = convert_keys(information_biases)
+
     # Add alternative framing (always include with default if not provided)
     if alternative_framing:
         result["alternativeFraming"] = alternative_framing
     else:
         # Default framing based on detected biases
-        if dominant_biases:
+        if dominant_biases or user_instincts or information_biases:
             result["alternativeFraming"] = "이 콘텐츠는 특정 관점에서 작성되었습니다. 동일한 사실을 다른 프레임으로 바라보면, 더 균형 잡힌 이해가 가능합니다. 위에서 감지된 편향 패턴을 인식하면서 다양한 관점의 정보를 함께 살펴보세요."
         elif text_examples:
             result["alternativeFraming"] = "제시된 텍스트 예시들을 다른 맥락에서 해석해보세요. 같은 사실도 어떤 프레임으로 보느냐에 따라 전혀 다른 결론에 도달할 수 있습니다."
@@ -159,6 +169,8 @@ async def stream_analysis(session_id: str, request: Request):
             "status": "analyzing",
             "claims": [],
             "detected_biases": [],
+            "user_instincts": [],
+            "information_biases": [],
             "verified_sources": [],
             "overall_trust_score": 0,
             "source_summary": "",
@@ -197,6 +209,10 @@ async def stream_analysis(session_id: str, request: Request):
                         result_payload["claims"] = node_output["claims"]
                     if "detected_biases" in node_output:
                         result_payload["detected_biases"] = node_output["detected_biases"]
+                    if "user_instincts" in node_output:
+                        result_payload["user_instincts"] = node_output["user_instincts"]
+                    if "information_biases" in node_output:
+                        result_payload["information_biases"] = node_output["information_biases"]
                     if "verified_sources" in node_output:
                         result_payload["verified_sources"] = node_output["verified_sources"]
                     if "overall_trust_score" in node_output:

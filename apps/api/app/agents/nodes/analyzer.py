@@ -31,17 +31,32 @@ async def analyzer_node(state: dict) -> dict:
     try:
         # Prevent a single slow model call from blocking the whole graph.
         logger.info("[Analyzer] Calling Gemini API...")
-        response = await asyncio.wait_for(
-            client.aio.models.generate_content(
-                model=settings.gemini_model_pro,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.7,
+        try:
+            response = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=settings.gemini_model_pro,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.7,
+                    ),
                 ),
-            ),
-            timeout=60,
-        )
+                timeout=120,
+            )
+        except TimeoutError:
+            # Pro model timed out – fall back to flash for faster response
+            logger.warning("[Analyzer] Pro model timed out, falling back to flash model")
+            response = await asyncio.wait_for(
+                client.aio.models.generate_content(
+                    model=settings.gemini_model_flash,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.7,
+                    ),
+                ),
+                timeout=60,
+            )
         logger.info(f"[Analyzer] Gemini API response received, length: {len(response.text)}")
         logger.debug(f"[Analyzer] Raw response: {response.text[:500]}...")
         result = extract_json(response.text)

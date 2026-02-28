@@ -17,11 +17,9 @@ import TabNav from '@/app/components/shared/TabNav';
 
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession';
 import { useAnalysisStream } from '@/lib/hooks/useAnalysisStream';
-import { useDemoMode } from '@/lib/hooks/useDemoMode';
 import { useAnalysisStore } from '@/lib/store/useAnalysisStore';
 import { useChatStore } from '@/lib/store/useChatStore';
 
-import { DEMO_SOCRATES_QUESTIONS } from '@/lib/demo/data';
 import type { ContentInput as ContentInputType } from '@/lib/types';
 
 const PANEL_TABS = ['소스 검증', '편향 분석', '다른 관점'];
@@ -39,9 +37,6 @@ function DashboardInner() {
 
   // SSE stream connection
   useAnalysisStream(sessionId);
-
-  // Demo mode
-  useDemoMode({ startAnalysis, analysisStatus });
 
   // Panel data from store
   const panels = useAnalysisStore((s) => s.panels);
@@ -114,10 +109,9 @@ function DashboardInner() {
   // Send first Socrates question when chat is opened and belief score exists
   useEffect(() => {
     if (showChat && isDone && chatMessages.length === 0 && beliefScoreBefore !== null && phase === 'questions') {
-      const firstQuestion = DEMO_SOCRATES_QUESTIONS[0];
       useChatStore.getState().addMessage({
         role: 'assistant',
-        content: firstQuestion,
+        content: '이 주장에서 가장 말이 안 된다고 생각하는 부분이 어디예요?',
         timestamp: new Date(),
       });
     }
@@ -175,9 +169,9 @@ function DashboardInner() {
                 {/* Hero text */}
                 <div className="text-center space-y-3 max-w-lg">
                   <h2 className="gradient-text text-3xl font-bold tracking-tight sm:text-4xl">
-                    논쟁에서 이기고 싶으면,
+                    진짜 설득은
                     <br />
-                    먼저 상대를 이해하세요
+                    상대를 이해하는 것에서 시작됩니다
                   </h2>
                   <p className="text-sm text-[var(--text-secondary)]">
                     기사나 텍스트를 입력하면 AI 에이전트들이 소스 검증, 관점 분석,

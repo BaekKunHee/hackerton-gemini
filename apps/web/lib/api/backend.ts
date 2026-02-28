@@ -3,10 +3,6 @@ function backendBaseUrl(): string {
   return raw.trim().replace(/\/+$/, '');
 }
 
-export function isBackendMode(): boolean {
-  return backendBaseUrl().length > 0;
-}
-
 export function backendUrl(path: string): string {
   const base = backendBaseUrl();
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
