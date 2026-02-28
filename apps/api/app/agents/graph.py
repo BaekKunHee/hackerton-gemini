@@ -115,6 +115,8 @@ class FlipsideState(TypedDict):
     claims: list[Claim]
     logic_structure: str
     detected_biases: list[DetectedBias]
+    user_instincts: list  # Hans Rosling 10 instincts
+    information_biases: list  # Media/information biases
     source_verifier_instructions: dict
     perspective_instructions: dict
 
@@ -160,6 +162,8 @@ def get_initial_state(
         claims=[],
         logic_structure="",
         detected_biases=[],
+        user_instincts=[],
+        information_biases=[],
         source_verifier_instructions={},
         perspective_instructions={},
 
