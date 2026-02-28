@@ -14,7 +14,12 @@ export type {
   AnalysisResult,
   PanelType,
   PanelData,
-  // New bias/instinct types
+  // New bias/instinct types (Agent A 응답 구조)
+  UserInstinctType,
+  UserInstinctItem,
+  InformationBiasType,
+  InformationBiasItem,
+  // Legacy bias/instinct types (기존 호환성)
   CognitiveBiasType,
   BiasItem,
   InstinctType,

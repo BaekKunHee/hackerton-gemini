@@ -88,20 +88,59 @@ export interface RelatedContent {
 
 // 편향 분석 패널 데이터
 export interface BiasPanelData {
-  // 새로운 분리된 구조
-  biases: BiasItem[]; // Main 편향 (인지적 편향)
-  instincts: InstinctItem[]; // Main 본능 (Hans Rosling)
+  // 새로운 분리된 구조 (Agent A 응답 구조)
+  userInstincts: UserInstinctItem[]; // 사용자 본능 (Hans Rosling 10가지)
+  informationBiases: InformationBiasItem[]; // 미디어/정보 편향
   textExamples: BiasExample[];
   alternativeFraming?: string;
   expandedTopics?: ExpandedTopic[]; // 사고의 확장
   relatedContent?: RelatedContent[]; // 연관 콘텐츠
 
   // Legacy support (기존 호환성)
+  biases?: BiasItem[]; // 기존 Main 편향
+  instincts?: InstinctItem[]; // 기존 Main 본능
   biasScores?: BiasScore[];
   dominantBiases?: string[];
 }
 
-// Main 편향 (Cognitive Biases)
+// 사용자 본능 (Hans Rosling 10가지 Instincts)
+export type UserInstinctType =
+  | 'gap_instinct' // 간극 본능 (우리 vs 그들)
+  | 'negativity_instinct' // 부정 본능 (나쁜 뉴스 편향)
+  | 'straight_line_instinct' // 직선 본능 (선형 예측)
+  | 'fear_instinct' // 공포 본능 (공포 기반 추론)
+  | 'size_instinct' // 크기 본능 (비율 맹시)
+  | 'generalization_instinct' // 일반화 본능 (고정관념)
+  | 'destiny_instinct' // 운명 본능 (불변성)
+  | 'single_perspective_instinct' // 단일 관점 본능 (하나의 해결책)
+  | 'blame_instinct' // 비난 본능 (희생양 찾기)
+  | 'urgency_instinct'; // 급박 본능 (지금 아니면 안됨)
+
+export interface UserInstinctItem {
+  instinctType: string; // 본능 유형 명칭
+  confidence: number; // 0-1
+  reasoning: string; // 왜 이 본능이 작동한다고 판단했는지
+  example: string; // 콘텐츠에서의 구체적 사례
+  label?: string; // 한국어 라벨 (프론트에서 매핑)
+}
+
+// 미디어/정보 편향 (Information Biases)
+export type InformationBiasType =
+  | 'confirmation_bias' // 확증 편향
+  | 'clickbait' // 클릭베이트
+  | 'bias_by_omission' // 누락에 의한 편향
+  | 'selection_of_sources' // 소스 선택의 편향
+  | 'framing'; // 프레이밍
+
+export interface InformationBiasItem {
+  biasType: string; // 편향 유형 명칭
+  confidence: number; // 0-1
+  reasoning: string; // 정보 구성에서 나타나는 편향적 특징 설명
+  example: string; // 콘텐츠에서의 구체적 사례
+  label?: string; // 한국어 라벨 (프론트에서 매핑)
+}
+
+// Legacy: Main 편향 (Cognitive Biases) - 기존 호환성
 export type CognitiveBiasType =
   | 'anchoring_bias' // 고정 편향
   | 'confirmation_bias' // 확증편향
@@ -114,7 +153,7 @@ export interface BiasItem {
   label: string; // 한국어 라벨
 }
 
-// Main 본능 (Hans Rosling Instincts)
+// Legacy: Main 본능 (Hans Rosling Instincts) - 기존 호환성
 export type InstinctType =
   | 'gap_instinct' // 간극 본능
   | 'blame_instinct' // 비난 본능

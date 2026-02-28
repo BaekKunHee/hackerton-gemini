@@ -150,25 +150,35 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
           setSearching(true);
           // Simulate search delay
           setTimeout(async () => {
-            if (useChatStore.getState().isComplete) {
+            try {
+              if (useChatStore.getState().isComplete) {
+                return;
+              }
+
+              // Send another message to get search results
+              const followUpResponse = await sendChatMessage(
+                sessionId,
+                '__SEARCH_COMPLETE__'
+              );
+              const resultMessage: ChatMessage = {
+                role: 'assistant',
+                content: followUpResponse.response,
+                timestamp: new Date(),
+              };
+              addMessage(resultMessage);
+              if (followUpResponse.isComplete) {
+                // Trigger belief_after score input before completing
+                setAwaitingBeliefScore('after');
+              }
+            } catch {
+              const errorMessage: ChatMessage = {
+                role: 'assistant',
+                content: '죄송합니다. 응답을 처리하는 중 오류가 발생했습니다.',
+                timestamp: new Date(),
+              };
+              addMessage(errorMessage);
+            } finally {
               setSearching(false);
-              return;
-            }
-            setSearching(false);
-            // Send another message to get search results
-            const followUpResponse = await sendChatMessage(
-              sessionId,
-              '__SEARCH_COMPLETE__'
-            );
-            const resultMessage: ChatMessage = {
-              role: 'assistant',
-              content: followUpResponse.response,
-              timestamp: new Date(),
-            };
-            addMessage(resultMessage);
-            if (followUpResponse.isComplete) {
-              // Trigger belief_after score input before completing
-              setAwaitingBeliefScore('after');
             }
           }, 2000);
         } else {

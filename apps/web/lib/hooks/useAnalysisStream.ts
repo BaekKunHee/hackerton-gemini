@@ -80,7 +80,7 @@ export function useAnalysisStream(
         if (cancelled) return;
 
         if (result.status === 'done') {
-          setComplete();
+          setComplete(result.result);
           stopPolling();
           return;
         }

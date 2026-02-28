@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import type { BiasPanelData, BiasItem, InstinctItem, BiasType, ExpandedTopic, RelatedContent } from '@/lib/types';
+import type { BiasPanelData, BiasItem, InstinctItem, BiasType, ExpandedTopic, RelatedContent, UserInstinctItem, InformationBiasItem } from '@/lib/types';
 import GlassPanel from '@/app/components/shared/GlassPanel';
 import Skeleton from '@/app/components/shared/Skeleton';
 
@@ -22,6 +22,44 @@ const legacyBiasLabels: Record<BiasType, string> = {
   single_perspective_instinct: '단일 관점 본능',
   blame_instinct: '비난 본능',
   urgency_instinct: '급박함 본능',
+};
+
+// 사용자 본능 라벨 (Hans Rosling 10가지)
+const userInstinctLabels: Record<string, string> = {
+  '간극 본능': '간극 본능',
+  '부정 본능': '부정 본능',
+  '직선 본능': '직선 본능',
+  '공포 본능': '공포 본능',
+  '크기 본능': '크기 본능',
+  '일반화 본능': '일반화 본능',
+  '운명 본능': '운명 본능',
+  '단일 관점 본능': '단일 관점 본능',
+  '비난 본능': '비난 본능',
+  '급박 본능': '급박 본능',
+  gap_instinct: '간극 본능',
+  negativity_instinct: '부정 본능',
+  straight_line_instinct: '직선 본능',
+  fear_instinct: '공포 본능',
+  size_instinct: '크기 본능',
+  generalization_instinct: '일반화 본능',
+  destiny_instinct: '운명 본능',
+  single_perspective_instinct: '단일 관점 본능',
+  blame_instinct: '비난 본능',
+  urgency_instinct: '급박 본능',
+};
+
+// 미디어/정보 편향 라벨
+const informationBiasLabels: Record<string, string> = {
+  '확증 편향': '확증 편향',
+  '클릭베이트': '클릭베이트',
+  '누락에 의한 편향': '누락에 의한 편향',
+  '소스 선택의 편향': '소스 선택의 편향',
+  '프레이밍': '프레이밍',
+  confirmation_bias: '확증 편향',
+  clickbait: '클릭베이트',
+  bias_by_omission: '누락에 의한 편향',
+  selection_of_sources: '소스 선택의 편향',
+  framing: '프레이밍',
 };
 
 function getBarColor(score: number): string {
@@ -103,7 +141,10 @@ export default function BiasPanel({ data, isLoading }: BiasPanelProps) {
     );
   }
 
-  // Use new structure if available, fallback to legacy
+  // Use new Agent A structure if available, fallback to legacy
+  const hasUserInstincts = data.userInstincts && data.userInstincts.length > 0;
+  const hasInfoBiases = data.informationBiases && data.informationBiases.length > 0;
+  // Legacy fallback
   const hasBiases = data.biases && data.biases.length > 0;
   const hasInstincts = data.instincts && data.instincts.length > 0;
 

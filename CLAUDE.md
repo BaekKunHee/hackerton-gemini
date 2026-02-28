@@ -32,10 +32,11 @@
 Frontend     : Next.js 16 (App Router) + React 19
 Styling      : Tailwind CSS 4
 State        : Zustand (클라이언트 상태관리)
+Backend      : FastAPI (Python) + LangGraph (에이전트 오케스트레이션)
 AI Core      : Gemini 3 Pro API (Deep Think mode)
 Search       : Google Search Grounding
-Language     : TypeScript 5
-Deployment   : Vercel
+Language     : TypeScript 5 (Frontend) / Python 3 (Backend)
+Deployment   : Vercel (Frontend) / TBD (Backend)
 ```
 
 ---
@@ -50,9 +51,13 @@ Deployment   : Vercel
 │   ├── ARCHITECTURE.md          # 시스템 아키텍처
 │   ├── AGENTS.md                # AI 에이전트 설계
 │   ├── UI.md                    # UI/UX 설계
-│   ├── API.md                   # API 설계
+│   ├── API.md                   # API 설계 (프론트엔드 라우트)
+│   ├── API_SPEC.md              # 백엔드 API 명세 (FastAPI)
 │   └── PATTERNS.md              # 클린 코드 패턴
-├── apps/web/                    # Next.js 웹 앱 (모노레포)
+├── scripts/
+│   ├── api_setup.sh             # 백엔드 초기 세팅 스크립트
+│   └── api_dev.sh               # 백엔드 개발 서버 실행
+├── apps/web/                    # Next.js 웹 앱 (프론트엔드)
 │   ├── app/
 │   │   ├── page.tsx             # 메인 페이지 (Dashboard 렌더링)
 │   │   ├── layout.tsx           # 루트 레이아웃
@@ -77,9 +82,11 @@ Deployment   : Vercel
 │   │       │   └── ContentInput.tsx     # URL/텍스트 입력 UI
 │   │       ├── chat/
 │   │       │   ├── SocratesChat.tsx     # 소크라테스 대화창
-│   │       │   └── ChatMessage.tsx      # 개별 메시지
+│   │       │   ├── ChatMessage.tsx      # 개별 메시지
+│   │       │   └── BeliefScoreSlider.tsx # 확신도 슬라이더
 │   │       ├── result/
 │   │       │   ├── AnalysisCard.tsx     # Steel Man 분석 카드
+│   │       │   ├── MindShiftCard.tsx    # 인식 변화 카드
 │   │       │   └── ShareButton.tsx      # 공유 버튼
 │   │       └── shared/                  # 공통 컴포넌트
 │   │           ├── Header.tsx
@@ -113,6 +120,35 @@ Deployment   : Vercel
 │       ├── demo/
 │       │   └── data.ts                  # 데모 데이터 및 질문/응답
 │       └── session-store.ts             # EventEmitter 세션 관리
+├── apps/api/                    # FastAPI 백엔드 (Python)
+│   ├── requirements.txt         # Python 의존성
+│   ├── app/
+│   │   ├── main.py              # FastAPI 엔트리포인트
+│   │   ├── agents/              # LangGraph 에이전트 구현
+│   │   │   ├── graph.py         # 에이전트 오케스트레이션 그래프
+│   │   │   ├── prompts.py       # 에이전트 프롬프트 템플릿
+│   │   │   ├── utils.py         # 에이전트 유틸리티
+│   │   │   └── nodes/           # 개별 에이전트 노드
+│   │   │       ├── analyzer.py      # Agent A: 분석기
+│   │   │       ├── source_verifier.py # Agent B: 소스 검증
+│   │   │       ├── perspective.py   # Agent C: 관점 탐색
+│   │   │       ├── socrates.py      # Agent D: 소크라테스
+│   │   │       └── aggregate.py     # 결과 통합
+│   │   ├── api/routes/          # API 라우트
+│   │   │   ├── analyze.py       # POST /api/analyze
+│   │   │   ├── chat.py          # POST /api/chat
+│   │   │   ├── result.py        # GET /api/result/:id
+│   │   │   └── health.py        # GET /api/health
+│   │   ├── core/
+│   │   │   ├── config.py        # 환경 설정
+│   │   │   └── gemini.py        # Gemini API 클라이언트
+│   │   ├── schemas/             # Pydantic 스키마
+│   │   │   ├── analyze.py
+│   │   │   ├── agent.py
+│   │   │   ├── chat.py
+│   │   │   └── events.py
+│   │   └── services/
+│   │       └── session.py       # 세션 관리 서비스
 └── public/                              # 정적 파일
 ```
 
@@ -414,11 +450,13 @@ type StreamEvent =
 ## 환경 변수
 
 ```env
-# .env.local
+# apps/web/.env.local (프론트엔드)
 GEMINI_API_KEY=your_gemini_api_key
-
 # 백엔드 모드 활성화 (설정 시 백엔드로 요청 전달, 미설정 시 데모 모드)
 NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# apps/api/.env (백엔드)
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ---
@@ -457,13 +495,20 @@ if (isBackendMode()) {
 ## 빠른 시작
 
 ```bash
-# 의존성 설치
+# 프론트엔드
 npm install
+npm run dev        # http://localhost:3000
 
-# 개발 서버 실행
-npm run dev
+# 백엔드 (별도 터미널)
+cd apps/api
+pip install -r requirements.txt
+uvicorn app.main:app --reload   # http://localhost:8000
 
-# 빌드
+# 또는 스크립트 사용
+./scripts/api_setup.sh   # 백엔드 초기 세팅
+./scripts/api_dev.sh     # 백엔드 개발 서버
+
+# 빌드 (프론트엔드)
 npm run build
 ```
 
@@ -486,7 +531,8 @@ npm run build
 - [시스템 아키텍처](docs/ARCHITECTURE.md)
 - [AI 에이전트 설계](docs/AGENTS.md)
 - [UI/UX 설계](docs/UI.md)
-- [API 설계](docs/API.md)
+- [API 설계 (프론트엔드)](docs/API.md)
+- [백엔드 API 명세 (FastAPI)](docs/API_SPEC.md)
 - [클린 코드 패턴](docs/PATTERNS.md)
 
 ---

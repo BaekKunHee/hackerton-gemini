@@ -50,6 +50,8 @@ async def analyzer_node(state: dict) -> dict:
             result = {
                 "claims": [],
                 "logic_structure": response.text,
+                "user_instincts": [],
+                "information_biases": [],
                 "detected_biases": [],
                 "agent_instructions": {},
             }
@@ -57,6 +59,9 @@ async def analyzer_node(state: dict) -> dict:
         return {
             "claims": result.get("claims", []),
             "logic_structure": result.get("logic_structure", ""),
+            "user_instincts": result.get("user_instincts", []),
+            "information_biases": result.get("information_biases", []),
+            # Legacy support: detected_biases for backward compatibility
             "detected_biases": result.get("detected_biases", []),
             "source_verifier_instructions": result.get("agent_instructions", {}).get(
                 "source_verifier", {}
@@ -84,6 +89,8 @@ async def analyzer_node(state: dict) -> dict:
         return {
             "claims": [],
             "logic_structure": "",
+            "user_instincts": [],
+            "information_biases": [],
             "detected_biases": [],
             "source_verifier_instructions": {},
             "perspective_instructions": {},
@@ -102,6 +109,8 @@ async def analyzer_node(state: dict) -> dict:
         return {
             "claims": [],
             "logic_structure": "",
+            "user_instincts": [],
+            "information_biases": [],
             "detected_biases": [],
             "source_verifier_instructions": {},
             "perspective_instructions": {},

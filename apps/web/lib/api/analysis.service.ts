@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { AnalyzeResponse, ChatResponse } from '@/lib/types';
+import type { AnalyzeResponse, ChatResponse, AnalysisResult } from '@/lib/types';
 
 export async function startAnalysis(
   type: 'url' | 'text' | 'image',
@@ -13,8 +13,8 @@ export async function startAnalysis(
 
 export async function getResult(
   sessionId: string
-): Promise<{ status: string; result?: unknown }> {
-  return apiClient<{ status: string; result?: unknown }>(
+): Promise<{ status: string; result?: AnalysisResult }> {
+  return apiClient<{ status: string; result?: AnalysisResult }>(
     `/api/result/${sessionId}`
   );
 }

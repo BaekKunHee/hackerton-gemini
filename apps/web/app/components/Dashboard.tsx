@@ -46,6 +46,7 @@ function DashboardInner() {
   // Panel data from store
   const panels = useAnalysisStore((s) => s.panels);
   const steelMan = useAnalysisStore((s) => s.steelMan);
+  const analysisError = useAnalysisStore((s) => s.error);
   const chatIsComplete = useChatStore((s) => s.isComplete);
   const chatMessages = useChatStore((s) => s.messages);
   const beliefScoreBefore = useChatStore((s) => s.beliefScoreBefore);
@@ -65,6 +66,7 @@ function DashboardInner() {
   const isIdle = analysisStatus === 'idle';
   const isAnalyzing = analysisStatus === 'analyzing';
   const isDone = analysisStatus === 'done';
+  const isError = analysisStatus === 'error';
 
   // Step 1: User submits content → show belief score (don't start analysis yet)
   const handleSubmit = useCallback(
@@ -159,9 +161,9 @@ function DashboardInner() {
       {/* Main content */}
       <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
-          {/* Content Input - shown when idle and no pending belief score */}
+          {/* Content Input - shown when idle/error and no pending belief score */}
           <AnimatePresence mode="wait">
-            {isIdle && !pendingInput && (
+            {(isIdle || isError) && !pendingInput && (
               <motion.div
                 key="input"
                 initial={{ opacity: 0, y: 20 }}
@@ -182,6 +184,13 @@ function DashboardInner() {
                     편향 진단을 수행합니다.
                   </p>
                 </div>
+
+                {isError && (
+                  <div className="w-full max-w-2xl rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    분석 중 오류가 발생했습니다.
+                    {analysisError ? ` (${analysisError})` : ''}
+                  </div>
+                )}
 
                 <ContentInput
                   onSubmit={handleSubmit}
@@ -479,9 +488,9 @@ function DashboardInner() {
             )}
           </AnimatePresence>
 
-          {/* Reset button - shown when done */}
+          {/* Reset button - shown when done/error */}
           <AnimatePresence>
-            {isDone && (
+            {(isDone || isError) && (
               <motion.div
                 key="reset"
                 initial={{ opacity: 0 }}
