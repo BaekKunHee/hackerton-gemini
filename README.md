@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# hackerton-gemini Monorepo
 
-## Getting Started
+Monorepo with:
 
-First, run the development server:
+- `apps/web`: Next.js frontend
+- `apps/api`: Python + FastAPI backend
+- root `package.json`: npm workspace orchestration
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Structure
+
+```text
+.
+├── apps
+│   ├── web    # Next.js app
+│   └── api    # FastAPI app
+└── package.json
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Run Web
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run dev:web
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Web runs at `http://localhost:3000`.
 
-## Learn More
+## Run API
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev:api
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+API runs at `http://127.0.0.1:8000`.
+Health check: `GET /api/health`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Combined Dev
 
-## Deploy on Vercel
+Run frontend and backend in separate terminals:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run dev:web
+npm run dev:api
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API Helper Scripts
+
+- `npm run setup:api`: creates `apps/api/.venv`, installs `requirements.txt`, and creates `.env` from `.env.example` if missing.
+- `npm run dev:api`: runs setup automatically, then starts FastAPI with reload.
+
+## Workspace Note
+
+- Workspace mode is enabled at root via `workspaces`.
+- If you run `npm install` at repo root, a root-level `node_modules/` is normal behavior for npm workspaces.
+- `apps/web/.next` remains inside `apps/web` (build artifact for the web app).
