@@ -57,7 +57,7 @@ export interface StreamErrorEvent {
 }
 
 export interface AnalyzeRequest {
-  type: 'url' | 'text';
+  type: 'url' | 'text' | 'image';
   content: string;
 }
 

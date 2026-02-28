@@ -24,15 +24,22 @@ function getSessionState(sessionId: string): SessionChatState {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as ChatRequest;
+    const body = (await request.json()) as Partial<ChatRequest> & {
+      sessionId?: string;
+      message?: string;
+      agreed?: boolean;
+    };
 
-    if (!body.sessionId || !body.message) {
+    if (
+      !body.sessionId ||
+      (typeof body.message !== 'string' && typeof body.agreed !== 'boolean')
+    ) {
       return NextResponse.json<ApiResponse<never>>(
         {
           success: false,
           error: {
             code: 'INVALID_INPUT',
-            message: 'sessionId and message are required',
+            message: 'sessionId and either message or agreed(boolean) are required',
           },
         },
         { status: 400 }
@@ -40,11 +47,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (isBackendMode()) {
+      const normalizedMessage =
+        typeof body.message === 'string'
+          ? body.message
+          : body.agreed
+          ? '네, 동의해요'
+          : '아니요';
       const raw = await fetchBackend<Record<string, unknown>>('/api/chat', {
         method: 'POST',
         body: JSON.stringify({
           sessionId: body.sessionId,
-          message: body.message,
+          message: normalizedMessage,
         }),
       });
       const data = convertKeys(raw) as ChatResponse;
@@ -54,7 +67,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { sessionId, message } = body;
+    const { sessionId } = body;
+    if (!sessionId) {
+      return NextResponse.json<ApiResponse<never>>(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_INPUT',
+            message: 'sessionId is required',
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    if (typeof body.agreed === 'boolean') {
+      return handleDemoConfirmation(sessionId, body.agreed);
+    }
+
+    const message = body.message ?? '';
     const state = getSessionState(sessionId);
 
     let response: string;
@@ -168,34 +199,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const state = getSessionState(sessionId);
-    state.userAgreed = agreed;
-    state.phase = 'followup';
-
-    let response: string;
-    let isSearching = false;
-
-    if (agreed) {
-      response = DEMO_CONFIRMATION_RESPONSES.yes;
-      isSearching = true;
-    } else {
-      response = DEMO_CONFIRMATION_RESPONSES.no;
-    }
-
-    sessionStates.set(sessionId, state);
-
-    const chatResponse: ChatResponse = {
-      response,
-      step: state.step,
-      isComplete: false,
-      awaitingConfirmation: false,
-      isSearching,
-    };
-
-    return NextResponse.json<ApiResponse<ChatResponse>>({
-      success: true,
-      data: chatResponse,
-    });
+    return handleDemoConfirmation(sessionId, agreed);
   } catch {
     return NextResponse.json<ApiResponse<never>>(
       {
@@ -210,7 +214,39 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-function getStepResponse(step: number, _userMessage: string): string {
+function handleDemoConfirmation(sessionId: string, agreed: boolean) {
+  const state = getSessionState(sessionId);
+  state.userAgreed = agreed;
+  state.phase = 'followup';
+
+  let response: string;
+  let isSearching = false;
+
+  if (agreed) {
+    response = DEMO_CONFIRMATION_RESPONSES.yes;
+    isSearching = true;
+  } else {
+    response = DEMO_CONFIRMATION_RESPONSES.no;
+  }
+
+  sessionStates.set(sessionId, state);
+
+  const chatResponse: ChatResponse = {
+    response,
+    step: state.step,
+    isComplete: false,
+    awaitingConfirmation: false,
+    isSearching,
+  };
+
+  return NextResponse.json<ApiResponse<ChatResponse>>({
+    success: true,
+    data: chatResponse,
+  });
+}
+
+function getStepResponse(step: number, userMessage: string): string {
+  void userMessage;
   const responses: Record<number, string> = {
     1: `흥미로운 포인트네요. 실제로 많은 분들이 비슷한 부분에서 의문을 가지세요.\n\n그런데 한 가지 더 확인해볼게요. ${DEMO_SOCRATES_QUESTIONS[1]}`,
     2: `맞아요, 숫자가 꽤 다르죠? 공식 실업률 6.8%와 기사의 25%는 큰 차이예요. 확장실업률(21.3%)을 감안해도 과장된 면이 있죠.\n\n이제 다른 관점들도 살펴봤는데요. ${DEMO_SOCRATES_QUESTIONS[2]}`,

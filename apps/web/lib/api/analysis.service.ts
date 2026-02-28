@@ -2,7 +2,7 @@ import { apiClient } from './client';
 import type { AnalyzeResponse, ChatResponse } from '@/lib/types';
 
 export async function startAnalysis(
-  type: 'url' | 'text',
+  type: 'url' | 'text' | 'image',
   content: string
 ): Promise<AnalyzeResponse> {
   return apiClient<AnalyzeResponse>('/api/analyze', {
@@ -34,7 +34,7 @@ export async function sendConfirmation(
   agreed: boolean
 ): Promise<ChatResponse> {
   return apiClient<ChatResponse>('/api/chat', {
-    method: 'PUT',
+    method: 'POST',
     body: JSON.stringify({ sessionId, agreed }),
   });
 }

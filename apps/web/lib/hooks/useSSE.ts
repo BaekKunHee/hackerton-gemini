@@ -20,8 +20,10 @@ export function useSSE(
   const eventSourceRef = useRef<EventSource | null>(null);
   const onMessageRef = useRef(options.onMessage);
 
-  // Keep the callback ref updated without causing reconnections
-  onMessageRef.current = options.onMessage;
+  // Keep the callback ref updated without causing reconnections.
+  useEffect(() => {
+    onMessageRef.current = options.onMessage;
+  }, [options.onMessage]);
 
   const stableOnMessage = useCallback((event: MessageEvent) => {
     onMessageRef.current(event);
@@ -33,7 +35,6 @@ export function useSSE(
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
-        setIsConnected(false);
       }
       return;
     }
@@ -42,8 +43,6 @@ export function useSSE(
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
     }
-
-    setError(null);
 
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
@@ -67,7 +66,6 @@ export function useSSE(
     return () => {
       eventSource.close();
       eventSourceRef.current = null;
-      setIsConnected(false);
     };
   }, [url, stableOnMessage]);
 

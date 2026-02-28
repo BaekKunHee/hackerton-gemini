@@ -26,10 +26,12 @@ async def perspective_explorer_node(state: dict) -> dict:
     if not topic and claims:
         topic = claims[0].get("text", "") if claims else ""
 
-    prompt = PERSPECTIVE_EXPLORER_PROMPT.format(
-        topic=topic,
-        keywords=json.dumps(keywords, ensure_ascii=False),
-        claims=json.dumps(claims, ensure_ascii=False),
+    # Avoid str.format on JSON examples inside the prompt template.
+    prompt = (
+        PERSPECTIVE_EXPLORER_PROMPT
+        .replace("{topic}", topic)
+        .replace("{keywords}", json.dumps(keywords, ensure_ascii=False))
+        .replace("{claims}", json.dumps(claims, ensure_ascii=False))
     ) + "\n\nYou must respond in valid JSON format only."
 
     # Use Flash model with Google Search Grounding (fast search tasks)

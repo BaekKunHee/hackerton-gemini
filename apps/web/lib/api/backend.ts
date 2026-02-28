@@ -1,11 +1,16 @@
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || '';
+function backendBaseUrl(): string {
+  const raw = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '';
+  return raw.trim().replace(/\/+$/, '');
+}
 
 export function isBackendMode(): boolean {
-  return BACKEND_URL.length > 0;
+  return backendBaseUrl().length > 0;
 }
 
 export function backendUrl(path: string): string {
-  return `${BACKEND_URL}${path}`;
+  const base = backendBaseUrl();
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${normalizedPath}`;
 }
 
 function toCamelCase(str: string): string {

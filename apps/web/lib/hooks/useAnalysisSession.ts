@@ -19,7 +19,7 @@ interface UseAnalysisSessionReturn {
   chatLoading: boolean;
 
   // Actions
-  startAnalysis: (input: { type: 'url' | 'text'; content: string }) => Promise<void>;
+  startAnalysis: (input: { type: 'url' | 'text' | 'image'; content: string }) => Promise<void>;
   sendMessage: (message: string) => Promise<void>;
   handleConfirmation: (agreed: boolean) => Promise<void>;
   reset: () => void;
@@ -47,7 +47,7 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
   const resetChat = useChatStore((s) => s.reset);
 
   const startAnalysis = useCallback(
-    async (input: { type: 'url' | 'text'; content: string }) => {
+    async (input: { type: 'url' | 'text' | 'image'; content: string }) => {
       setIsStarting(true);
       try {
         const response = await apiStartAnalysis(input.type, input.content);

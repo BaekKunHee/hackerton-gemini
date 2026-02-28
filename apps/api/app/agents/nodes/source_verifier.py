@@ -20,9 +20,11 @@ async def source_verifier_node(state: dict) -> dict:
     sources_to_verify = state.get("source_verifier_instructions", {}).get("sources", [])
     claims = state.get("claims", [])
 
-    prompt = SOURCE_VERIFIER_PROMPT.format(
-        sources=json.dumps(sources_to_verify, ensure_ascii=False),
-        claims=json.dumps(claims, ensure_ascii=False),
+    # Avoid str.format on JSON examples inside the prompt template.
+    prompt = (
+        SOURCE_VERIFIER_PROMPT
+        .replace("{sources}", json.dumps(sources_to_verify, ensure_ascii=False))
+        .replace("{claims}", json.dumps(claims, ensure_ascii=False))
     ) + "\n\nYou must respond in valid JSON format only."
 
     # Use Flash model with Google Search Grounding (fast search tasks)

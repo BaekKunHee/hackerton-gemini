@@ -18,7 +18,8 @@ async def analyzer_node(state: dict) -> dict:
 
     client = genai.Client(api_key=settings.gemini_api_key)
 
-    prompt = ANALYZER_PROMPT.format(content=state["content"])
+    # Avoid str.format on JSON examples inside the prompt template.
+    prompt = ANALYZER_PROMPT.replace("{content}", state["content"])
 
     # Use Pro model for complex reasoning and bias detection
     response = await client.aio.models.generate_content(

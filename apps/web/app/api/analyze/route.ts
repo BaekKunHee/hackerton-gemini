@@ -33,13 +33,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (body.type !== 'url' && body.type !== 'text') {
+    if (body.type !== 'url' && body.type !== 'text' && body.type !== 'image') {
       return NextResponse.json<ApiResponse<never>>(
         {
           success: false,
           error: {
             code: 'INVALID_TYPE',
-            message: 'type must be "url" or "text"',
+            message: 'type must be "url", "text", or "image"',
           },
         },
         { status: 400 }
