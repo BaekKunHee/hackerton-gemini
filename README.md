@@ -1,4 +1,4 @@
-# hackerton-gemini Monorepo
+# hackerton-gemini Monorep
 
 Monorepo with:
 
