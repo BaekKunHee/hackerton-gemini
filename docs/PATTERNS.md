@@ -323,7 +323,251 @@ export function useAnalysisState() {
 
 ---
 
-## 4. 에러 핸들링 패턴
+## 4. Zustand 상태 관리 패턴
+
+### 4.1 스토어 구조
+
+```typescript
+// lib/store/useAnalysisStore.ts
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+
+interface AnalysisState {
+  // State
+  sessionId: string | null;
+  status: 'idle' | 'analyzing' | 'done' | 'error';
+  panels: {
+    source: SourcePanelData | null;
+    perspective: PerspectivePanelData | null;
+    bias: BiasPanelData | null;
+  };
+  error: Error | null;
+
+  // Actions
+  startAnalysis: (sessionId: string) => void;
+  updatePanel: <K extends keyof AnalysisState['panels']>(
+    panel: K,
+    data: AnalysisState['panels'][K]
+  ) => void;
+  setComplete: () => void;
+  setError: (error: Error) => void;
+  reset: () => void;
+}
+
+const initialState = {
+  sessionId: null,
+  status: 'idle' as const,
+  panels: { source: null, perspective: null, bias: null },
+  error: null,
+};
+
+export const useAnalysisStore = create<AnalysisState>()(
+  devtools(
+    (set) => ({
+      ...initialState,
+
+      startAnalysis: (sessionId) =>
+        set({ sessionId, status: 'analyzing', error: null }, false, 'startAnalysis'),
+
+      updatePanel: (panel, data) =>
+        set(
+          (state) => ({ panels: { ...state.panels, [panel]: data } }),
+          false,
+          `updatePanel:${panel}`
+        ),
+
+      setComplete: () => set({ status: 'done' }, false, 'setComplete'),
+
+      setError: (error) => set({ status: 'error', error }, false, 'setError'),
+
+      reset: () => set(initialState, false, 'reset'),
+    }),
+    { name: 'analysis-store' }
+  )
+);
+```
+
+### 4.2 에이전트 스토어
+
+```typescript
+// lib/store/useAgentStore.ts
+type AgentId = 'analyzer' | 'source' | 'perspective' | 'socrates';
+
+interface AgentState {
+  id: AgentId;
+  status: 'idle' | 'thinking' | 'searching' | 'analyzing' | 'done' | 'error';
+  message?: string;
+  progress?: number;
+}
+
+interface AgentStoreState {
+  agents: Record<AgentId, AgentState>;
+  updateAgent: (id: AgentId, update: Partial<Omit<AgentState, 'id'>>) => void;
+  resetAgents: () => void;
+}
+
+const createInitialAgents = (): Record<AgentId, AgentState> => ({
+  analyzer: { id: 'analyzer', status: 'idle' },
+  source: { id: 'source', status: 'idle' },
+  perspective: { id: 'perspective', status: 'idle' },
+  socrates: { id: 'socrates', status: 'idle' },
+});
+
+export const useAgentStore = create<AgentStoreState>()(
+  devtools(
+    (set) => ({
+      agents: createInitialAgents(),
+
+      updateAgent: (id, update) =>
+        set(
+          (state) => ({
+            agents: {
+              ...state.agents,
+              [id]: { ...state.agents[id], ...update },
+            },
+          }),
+          false,
+          `updateAgent:${id}`
+        ),
+
+      resetAgents: () =>
+        set({ agents: createInitialAgents() }, false, 'resetAgents'),
+    }),
+    { name: 'agent-store' }
+  )
+);
+```
+
+### 4.3 대화 스토어
+
+```typescript
+// lib/store/useChatStore.ts
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+interface ChatStoreState {
+  messages: ChatMessage[];
+  step: number;
+  isLoading: boolean;
+
+  addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
+  setLoading: (loading: boolean) => void;
+  nextStep: () => void;
+  reset: () => void;
+}
+
+export const useChatStore = create<ChatStoreState>()(
+  devtools(
+    (set) => ({
+      messages: [],
+      step: 1,
+      isLoading: false,
+
+      addMessage: (message) =>
+        set(
+          (state) => ({
+            messages: [
+              ...state.messages,
+              {
+                ...message,
+                id: crypto.randomUUID(),
+                timestamp: new Date(),
+              },
+            ],
+          }),
+          false,
+          'addMessage'
+        ),
+
+      setLoading: (isLoading) => set({ isLoading }, false, 'setLoading'),
+
+      nextStep: () =>
+        set((state) => ({ step: state.step + 1 }), false, 'nextStep'),
+
+      reset: () =>
+        set({ messages: [], step: 1, isLoading: false }, false, 'reset'),
+    }),
+    { name: 'chat-store' }
+  )
+);
+```
+
+### 4.4 스토어 Selector 패턴
+
+```typescript
+// 성능 최적화를 위한 Selector 사용
+import { shallow } from 'zustand/shallow';
+
+// Bad: 전체 store를 구독 (불필요한 리렌더)
+const { panels, status } = useAnalysisStore();
+
+// Good: 필요한 부분만 선택적 구독
+const panels = useAnalysisStore((state) => state.panels);
+const status = useAnalysisStore((state) => state.status);
+
+// 여러 값을 한번에 선택할 때 shallow 비교
+const { panels, status } = useAnalysisStore(
+  (state) => ({ panels: state.panels, status: state.status }),
+  shallow
+);
+
+// Selector 함수 분리 (재사용 + 테스트 용이)
+const selectSourcePanel = (state: AnalysisState) => state.panels.source;
+const selectIsAnalyzing = (state: AnalysisState) => state.status === 'analyzing';
+
+function SourcePanel() {
+  const sourceData = useAnalysisStore(selectSourcePanel);
+  const isAnalyzing = useAnalysisStore(selectIsAnalyzing);
+  // ...
+}
+```
+
+### 4.5 스토어 조합 패턴
+
+```typescript
+// 여러 스토어를 조합하는 커스텀 훅
+function useAnalysisSession() {
+  const { sessionId, status, reset: resetAnalysis } = useAnalysisStore(
+    (state) => ({
+      sessionId: state.sessionId,
+      status: state.status,
+      reset: state.reset,
+    }),
+    shallow
+  );
+
+  const { agents, resetAgents } = useAgentStore(
+    (state) => ({
+      agents: state.agents,
+      resetAgents: state.resetAgents,
+    }),
+    shallow
+  );
+
+  const resetChat = useChatStore((state) => state.reset);
+
+  const resetAll = useCallback(() => {
+    resetAnalysis();
+    resetAgents();
+    resetChat();
+  }, [resetAnalysis, resetAgents, resetChat]);
+
+  return {
+    sessionId,
+    status,
+    agents,
+    resetAll,
+  };
+}
+```
+
+---
+
+## 5. 에러 핸들링 패턴
 
 ### 4.1 Result 타입 패턴
 
@@ -474,7 +718,7 @@ async function apiRequest<T>(
 
 ---
 
-## 5. API 레이어 패턴
+## 6. API 레이어 패턴
 
 ### 5.1 서비스 레이어 추상화
 
@@ -547,7 +791,7 @@ abstract class BaseAgent<TInput, TOutput> implements AgentRepository<TInput, TOu
 
 ---
 
-## 6. 타입 안전성 패턴
+## 7. 타입 안전성 패턴
 
 ### 6.1 Branded Types
 
@@ -646,7 +890,7 @@ export async function POST(request: Request) {
 
 ---
 
-## 7. 테스트 패턴
+## 8. 테스트 패턴
 
 ### 7.1 컴포넌트 테스트
 
@@ -724,7 +968,7 @@ describe('useAnalysis', () => {
 
 ---
 
-## 8. 성능 패턴
+## 9. 성능 패턴
 
 ### 8.1 메모이제이션
 
