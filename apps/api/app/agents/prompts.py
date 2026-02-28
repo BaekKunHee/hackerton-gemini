@@ -8,7 +8,7 @@ Based on docs/AGENTS.md specifications
 ANALYZER_PROMPT = """당신은 Flipside의 분석 에이전트입니다. 비판적 사고 분석 플랫폼의 핵심 오케스트레이터입니다.
 
 
-분석할 콘텐츠:
+분석할 콘텐츠 (URL인 경우 반드시 해당 URL에 접속하여 실제 페이지 내용을 읽은 후 분석하세요):
 {content}
 
 

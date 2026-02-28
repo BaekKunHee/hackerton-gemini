@@ -19,6 +19,10 @@ def _is_youtube_url(url: str) -> bool:
     return bool(_YOUTUBE_RE.search(url))
 
 
+def _is_url(content_type: str) -> bool:
+    return content_type == "url"
+
+
 def _build_contents(content: str, content_type: str, prompt_text: str):
     """Build Gemini contents: multimodal Part for YouTube URLs, plain text otherwise."""
     if content_type == "url" and _is_youtube_url(content):
@@ -54,6 +58,21 @@ async def analyzer_node(state: dict) -> dict:
     if content_type == "url" and _is_youtube_url(content):
         logger.info("[Analyzer] YouTube URL detected – passing as multimodal Part")
 
+    # For non-YouTube URLs, enable url_context so Gemini actually fetches
+    # and reads the page content instead of guessing from the URL string.
+    use_url_context = _is_url(content_type) and not _is_youtube_url(content)
+    if use_url_context:
+        logger.info("[Analyzer] Non-YouTube URL detected – enabling url_context tool")
+
+    tools = [types.Tool(url_context=types.UrlContext)] if use_url_context else None
+    # When tools (url_context) are active, response_mime_type may conflict,
+    # so we only force JSON output when no tools are in use.
+    config_kwargs: dict = {"temperature": 0.7}
+    if tools:
+        config_kwargs["tools"] = tools
+    else:
+        config_kwargs["response_mime_type"] = "application/json"
+
     try:
         # Prevent a single slow model call from blocking the whole graph.
         logger.info("[Analyzer] Calling Gemini API...")
@@ -62,10 +81,7 @@ async def analyzer_node(state: dict) -> dict:
                 client.aio.models.generate_content(
                     model=settings.gemini_model_pro,
                     contents=contents,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=0.7,
-                    ),
+                    config=types.GenerateContentConfig(**config_kwargs),
                 ),
                 timeout=120,
             )
@@ -76,10 +92,7 @@ async def analyzer_node(state: dict) -> dict:
                 client.aio.models.generate_content(
                     model=settings.gemini_model_flash,
                     contents=contents,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=0.7,
-                    ),
+                    config=types.GenerateContentConfig(**config_kwargs),
                 ),
                 timeout=60,
             )
