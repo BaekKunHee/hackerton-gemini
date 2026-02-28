@@ -11,8 +11,6 @@ import PerspectivePanel from '@/app/components/panels/PerspectivePanel';
 import BiasPanel from '@/app/components/panels/BiasPanel';
 import SocratesChat from '@/app/components/chat/SocratesChat';
 import AnalysisCard from '@/app/components/result/AnalysisCard';
-import MindShiftCard from '@/app/components/result/MindShiftCard';
-import BeliefScoreSlider from '@/app/components/chat/BeliefScoreSlider';
 import TabNav from '@/app/components/shared/TabNav';
 
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession';
@@ -44,16 +42,11 @@ function DashboardInner() {
   const analysisError = useAnalysisStore((s) => s.error);
   const chatIsComplete = useChatStore((s) => s.isComplete);
   const chatMessages = useChatStore((s) => s.messages);
-  const beliefScoreBefore = useChatStore((s) => s.beliefScoreBefore);
-  const beliefScoreAfter = useChatStore((s) => s.beliefScoreAfter);
   const phase = useChatStore((s) => s.phase);
   const setChatComplete = useChatStore((s) => s.setComplete);
 
   // Active panel tab (mobile view)
   const [activeTab, setActiveTab] = useState(0);
-
-  // Pending input: saved when user submits, waiting for belief score
-  const [pendingInput, setPendingInput] = useState<ContentInputType | null>(null);
 
   // CTA: user must click to start Socrates conversation
   const [showChat, setShowChat] = useState(false);
@@ -63,24 +56,12 @@ function DashboardInner() {
   const isDone = analysisStatus === 'done';
   const isError = analysisStatus === 'error';
 
-  // Step 1: User submits content → show belief score (don't start analysis yet)
+  // User submits content → start analysis immediately
   const handleSubmit = useCallback(
     (input: ContentInputType) => {
-      setPendingInput(input);
+      startAnalysis({ type: input.type, content: input.value });
     },
-    []
-  );
-
-  // Step 2: Belief score submitted → now start analysis
-  const handleBeliefScoreBefore = useCallback(
-    (score: number) => {
-      useChatStore.getState().setBeliefScoreBefore(score);
-      if (pendingInput) {
-        startAnalysis({ type: pendingInput.type, content: pendingInput.value });
-        setPendingInput(null);
-      }
-    },
-    [pendingInput, startAnalysis]
+    [startAnalysis]
   );
 
   const handleSendMessage = useCallback(
@@ -88,13 +69,6 @@ function DashboardInner() {
       sendMessage(message);
     },
     [sendMessage]
-  );
-
-  const handleBeliefScore = useCallback(
-    (score: number, scorePhase: 'before' | 'after') => {
-      console.log(`Belief score ${scorePhase}:`, score);
-    },
-    []
   );
 
   const handleEndConversation = useCallback(() => {
@@ -106,36 +80,19 @@ function DashboardInner() {
     setChatComplete();
   }, [setChatComplete]);
 
-  // Send first Socrates question when chat is opened and belief score exists
+  // Send first Socrates question when chat is opened
   useEffect(() => {
-    if (showChat && isDone && chatMessages.length === 0 && beliefScoreBefore !== null && phase === 'questions') {
+    if (showChat && isDone && chatMessages.length === 0 && phase === 'questions') {
       useChatStore.getState().addMessage({
         role: 'assistant',
         content: '이 주장에서 가장 말이 안 된다고 생각하는 부분이 어디예요?',
         timestamp: new Date(),
       });
     }
-  }, [showChat, isDone, chatMessages.length, beliefScoreBefore, phase]);
-
-  // Compute mind shift for display
-  const mindShift =
-    beliefScoreBefore !== null && beliefScoreAfter !== null
-      ? {
-          before: beliefScoreBefore,
-          after: beliefScoreAfter,
-          change: beliefScoreAfter - beliefScoreBefore,
-          direction:
-            beliefScoreAfter > beliefScoreBefore
-              ? ('strengthened' as const)
-              : beliefScoreAfter < beliefScoreBefore
-                ? ('weakened' as const)
-                : ('unchanged' as const),
-        }
-      : null;
+  }, [showChat, isDone, chatMessages.length, phase]);
 
   const reset = useCallback(() => {
     sessionReset();
-    setPendingInput(null);
     setShowChat(false);
     setActiveTab(0);
   }, [sessionReset]);
@@ -155,9 +112,9 @@ function DashboardInner() {
       {/* Main content */}
       <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
-          {/* Content Input - shown when idle/error and no pending belief score */}
+          {/* Content Input - shown when idle/error */}
           <AnimatePresence mode="wait">
-            {(isIdle || isError) && !pendingInput && (
+            {(isIdle || isError) && (
               <motion.div
                 key="input"
                 initial={{ opacity: 0, y: 20 }}
@@ -190,35 +147,6 @@ function DashboardInner() {
                   onSubmit={handleSubmit}
                   isLoading={isStarting}
                 />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Belief Score BEFORE analysis */}
-          <AnimatePresence mode="wait">
-            {pendingInput && isIdle && (
-              <motion.div
-                key="belief-before"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4 }}
-                className="flex flex-col items-center gap-6 pt-8 pb-8"
-              >
-                <div className="text-center space-y-2 max-w-md">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                    분석을 시작하기 전에
-                  </h3>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    나중에 생각이 어떻게 변했는지 비교해볼게요
-                  </p>
-                </div>
-                <div className="w-full max-w-md">
-                  <BeliefScoreSlider
-                    phase="before"
-                    onSubmit={handleBeliefScoreBefore}
-                  />
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -443,7 +371,6 @@ function DashboardInner() {
                 <SocratesChat
                   onSend={handleSendMessage}
                   onConfirmation={handleConfirmation}
-                  onBeliefScore={handleBeliefScore}
                   onEndConversation={handleEndConversation}
                 />
 
@@ -457,8 +384,6 @@ function DashboardInner() {
                       transition={{ duration: 0.4 }}
                       className="space-y-4"
                     >
-                      {/* Mind Shift Card - shows belief change */}
-                      {mindShift && <MindShiftCard mindShift={mindShift} />}
                       <AnalysisCard steelMan={steelMan} />
                     </motion.div>
                   ) : (

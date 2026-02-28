@@ -1,58 +1,62 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import type { SteelManOutput, ExpandedTopic, RefutationPoint } from '@/lib/types';
-import GlassPanel from '@/app/components/shared/GlassPanel';
-import ShareButton from './ShareButton';
+import { motion } from "framer-motion";
+import type {
+  SteelManOutput,
+  ExpandedTopic,
+  RefutationPoint,
+} from "@/lib/types";
+import GlassPanel from "@/app/components/shared/GlassPanel";
+import ShareButton from "./ShareButton";
 
 interface AnalysisCardProps {
   steelMan: SteelManOutput;
 }
 
-function getRelevanceColor(relevance: ExpandedTopic['relevance']): string {
+function getRelevanceColor(relevance: ExpandedTopic["relevance"]): string {
   switch (relevance) {
-    case 'high':
-      return 'var(--indigo-400)';
-    case 'medium':
-      return 'var(--cyan-400)';
-    case 'low':
-      return 'var(--text-muted)';
+    case "high":
+      return "var(--indigo-400)";
+    case "medium":
+      return "var(--cyan-400)";
+    case "low":
+      return "var(--text-muted)";
   }
 }
 
-function getRelevanceBgColor(relevance: ExpandedTopic['relevance']): string {
+function getRelevanceBgColor(relevance: ExpandedTopic["relevance"]): string {
   switch (relevance) {
-    case 'high':
-      return 'rgba(129, 140, 248, 0.1)';
-    case 'medium':
-      return 'rgba(34, 211, 238, 0.1)';
-    case 'low':
-      return 'rgba(255, 255, 255, 0.04)';
+    case "high":
+      return "rgba(129, 140, 248, 0.1)";
+    case "medium":
+      return "rgba(34, 211, 238, 0.1)";
+    case "low":
+      return "rgba(255, 255, 255, 0.04)";
   }
 }
 
-function getImportanceConfig(importance: RefutationPoint['importance']) {
+function getImportanceConfig(importance: RefutationPoint["importance"]) {
   switch (importance) {
-    case 'critical':
+    case "critical":
       return {
-        bg: 'rgba(239, 68, 68, 0.1)',
-        border: 'rgba(239, 68, 68, 0.3)',
-        text: '#ef4444',
-        label: '필수 반박',
+        bg: "rgba(239, 68, 68, 0.1)",
+        border: "rgba(239, 68, 68, 0.3)",
+        text: "#ef4444",
+        label: "필수 반박",
       };
-    case 'important':
+    case "important":
       return {
-        bg: 'rgba(251, 191, 36, 0.1)',
-        border: 'rgba(251, 191, 36, 0.3)',
-        text: '#fbbf24',
-        label: '중요',
+        bg: "rgba(251, 191, 36, 0.1)",
+        border: "rgba(251, 191, 36, 0.3)",
+        text: "#fbbf24",
+        label: "중요",
       };
-    case 'minor':
+    case "minor":
       return {
-        bg: 'rgba(148, 163, 184, 0.1)',
-        border: 'rgba(148, 163, 184, 0.3)',
-        text: '#94a3b8',
-        label: '참고',
+        bg: "rgba(148, 163, 184, 0.1)",
+        border: "rgba(148, 163, 184, 0.3)",
+        text: "#94a3b8",
+        label: "참고",
       };
   }
 }
@@ -71,7 +75,7 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
           &#9878;
         </span>
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-          Steel Man 분석
+          주어진 데이터 분석
         </h3>
         <span className="ml-auto text-[10px] text-[var(--text-muted)] bg-white/[0.04] rounded-full px-2.5 py-0.5">
           관점 확장
@@ -87,7 +91,7 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
           className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
         >
           <p className="text-[11px] text-[var(--cyan-400)] mb-2 font-medium uppercase tracking-wider">
-            상대 주장의 핵심
+            제공된 콘텐츠 핵심
           </p>
           <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
             {steelMan.opposingArgument}
@@ -126,7 +130,10 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
                     <div className="flex items-center gap-2 mb-1.5">
                       <span
                         className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: config.border, color: '#fff' }}
+                        style={{
+                          backgroundColor: config.border,
+                          color: "#fff",
+                        }}
                       >
                         {config.label}
                       </span>
@@ -192,14 +199,14 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
                       color: getRelevanceColor(topic.relevance),
                       borderWidth: 1,
                       borderColor:
-                        topic.relevance === 'high'
-                          ? 'rgba(129, 140, 248, 0.2)'
-                          : topic.relevance === 'medium'
-                            ? 'rgba(34, 211, 238, 0.2)'
-                            : 'rgba(255, 255, 255, 0.06)',
+                        topic.relevance === "high"
+                          ? "rgba(129, 140, 248, 0.2)"
+                          : topic.relevance === "medium"
+                            ? "rgba(34, 211, 238, 0.2)"
+                            : "rgba(255, 255, 255, 0.06)",
                     }}
                   >
-                    {topic.relevance === 'high' && (
+                    {topic.relevance === "high" && (
                       <span className="w-1.5 h-1.5 rounded-full bg-current" />
                     )}
                     {topic.topic}
@@ -229,14 +236,15 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
           text={[
             `[Flipside 분석 카드]`,
             ``,
-            `상대 주장의 핵심:`,
+            `제공된 콘텐츠 핵심:`,
             steelMan.opposingArgument,
             ``,
             ...(hasRefutationPoints
               ? [
                   `반박 포인트:`,
                   ...steelMan.refutationPoints!.map(
-                    (p) => `- [${p.importance}] ${p.point}: ${p.counterArgument}`
+                    (p) =>
+                      `- [${p.importance}] ${p.point}: ${p.counterArgument}`,
                   ),
                   ``,
                 ]
@@ -246,12 +254,12 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
             ...(hasExpandedTopics
               ? [
                   ``,
-                  `관련 주제: ${steelMan.expandedTopics!.map((t) => t.topic).join(', ')}`,
+                  `관련 주제: ${steelMan.expandedTopics!.map((t) => t.topic).join(", ")}`,
                 ]
               : []),
             ``,
             `— Flipside에서 분석됨`,
-          ].join('\n')}
+          ].join("\n")}
         />
       </motion.div>
     </GlassPanel>
