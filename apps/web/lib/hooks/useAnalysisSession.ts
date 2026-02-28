@@ -40,10 +40,10 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
   const setStep = useChatStore((s) => s.setStep);
   const chatLoading = useChatStore((s) => s.isLoading);
   const setChatLoading = useChatStore((s) => s.setLoading);
-  const setChatComplete = useChatStore((s) => s.setComplete);
   const setAwaitingConfirmation = useChatStore((s) => s.setAwaitingConfirmation);
   const setUserAgreed = useChatStore((s) => s.setUserAgreed);
   const setSearching = useChatStore((s) => s.setSearching);
+  const setAwaitingBeliefScore = useChatStore((s) => s.setAwaitingBeliefScore);
   const resetChat = useChatStore((s) => s.reset);
 
   const startAnalysis = useCallback(
@@ -97,7 +97,8 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
         }
 
         if (response.isComplete) {
-          setChatComplete();
+          // Trigger belief_after score input before completing
+          setAwaitingBeliefScore('after');
         }
       } catch {
         const errorMessage: ChatMessage = {
@@ -115,9 +116,9 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
       addMessage,
       setStep,
       setChatLoading,
-      setChatComplete,
       setAwaitingConfirmation,
       setSearching,
+      setAwaitingBeliefScore,
     ]
   );
 
@@ -162,13 +163,15 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
             };
             addMessage(resultMessage);
             if (followUpResponse.isComplete) {
-              setChatComplete();
+              // Trigger belief_after score input before completing
+              setAwaitingBeliefScore('after');
             }
           }, 2000);
         } else {
           // No search, just continue to next step
           if (response.isComplete) {
-            setChatComplete();
+            // Trigger belief_after score input before completing
+            setAwaitingBeliefScore('after');
           }
         }
       } catch {
@@ -187,8 +190,8 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
       addMessage,
       setUserAgreed,
       setChatLoading,
-      setChatComplete,
       setSearching,
+      setAwaitingBeliefScore,
     ]
   );
 

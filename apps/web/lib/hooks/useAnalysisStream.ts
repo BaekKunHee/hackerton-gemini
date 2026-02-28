@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useSSE } from './useSSE';
 import { useAnalysisStore } from '@/lib/store/useAnalysisStore';
 import { useAgentStore } from '@/lib/store/useAgentStore';
+import { getResult } from '@/lib/api/analysis.service';
 import type { StreamEvent, PanelType, PanelData, AgentId, AgentStatus } from '@/lib/types';
 
 interface UseAnalysisStreamReturn {
@@ -15,9 +16,11 @@ export function useAnalysisStream(
   sessionId: string | null
 ): UseAnalysisStreamReturn {
   const updatePanel = useAnalysisStore((s) => s.updatePanel);
+  const analysisStatus = useAnalysisStore((s) => s.status);
   const setComplete = useAnalysisStore((s) => s.setComplete);
   const setError = useAnalysisStore((s) => s.setError);
   const updateAgent = useAgentStore((s) => s.updateAgent);
+  const pollingIntervalRef = useRef<number | null>(null);
 
   const handleMessage = useCallback(
     (event: MessageEvent) => {
@@ -57,6 +60,59 @@ export function useAnalysisStream(
   const { isConnected, error } = useSSE(url, {
     onMessage: handleMessage,
   });
+
+  useEffect(() => {
+    if (!sessionId || analysisStatus !== 'analyzing') return;
+
+    let cancelled = false;
+    let startTimeout: number | null = null;
+
+    const stopPolling = () => {
+      if (pollingIntervalRef.current !== null) {
+        window.clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+
+    const pollResult = async () => {
+      try {
+        const result = await getResult(sessionId);
+        if (cancelled) return;
+
+        if (result.status === 'done') {
+          setComplete();
+          stopPolling();
+          return;
+        }
+        if (result.status === 'error') {
+          setError('Analysis failed');
+          stopPolling();
+        }
+      } catch {
+        // Keep polling on transient failures.
+      }
+    };
+
+    if (!isConnected) {
+      // Give SSE a short grace period before polling fallback starts.
+      startTimeout = window.setTimeout(() => {
+        void pollResult();
+        pollingIntervalRef.current = window.setInterval(() => {
+          void pollResult();
+        }, 5000);
+      }, 5000);
+    } else {
+      stopPolling();
+    }
+
+    return () => {
+      cancelled = true;
+      if (startTimeout !== null) {
+        window.clearTimeout(startTimeout);
+      }
+      stopPolling();
+    };
+  }, [sessionId, isConnected, analysisStatus, setComplete, setError]);
 
   return { isConnected, error };
 }

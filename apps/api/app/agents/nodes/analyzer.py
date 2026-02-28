@@ -1,10 +1,14 @@
 """Agent A: Analyzer (Orchestrator)"""
 import json
+import asyncio
+import logging
 from google import genai
 from google.genai import types
 from app.core.config import settings
 from app.agents.prompts import ANALYZER_PROMPT
 from app.agents.utils import extract_json
+
+logger = logging.getLogger(__name__)
 
 
 async def analyzer_node(state: dict) -> dict:
@@ -21,17 +25,25 @@ async def analyzer_node(state: dict) -> dict:
     # Avoid str.format on JSON examples inside the prompt template.
     prompt = ANALYZER_PROMPT.replace("{content}", state["content"])
 
-    # Use Pro model for complex reasoning and bias detection
-    response = await client.aio.models.generate_content(
-        model=settings.gemini_model_pro,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.7,
-        ),
-    )
+    logger.info(f"[Analyzer] Starting analysis for content length: {len(state.get('content', ''))}")
+    logger.debug(f"[Analyzer] Using model: {settings.gemini_model_pro}")
 
     try:
+        # Prevent a single slow model call from blocking the whole graph.
+        logger.info("[Analyzer] Calling Gemini API...")
+        response = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=settings.gemini_model_pro,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.7,
+                ),
+            ),
+            timeout=60,
+        )
+        logger.info(f"[Analyzer] Gemini API response received, length: {len(response.text)}")
+        logger.debug(f"[Analyzer] Raw response: {response.text[:500]}...")
         result = extract_json(response.text)
         if not result:
             # Fallback if JSON parsing fails
@@ -67,7 +79,26 @@ async def analyzer_node(state: dict) -> dict:
                 },
             ],
         }
+    except TimeoutError:
+        logger.error("[Analyzer] Request timed out after 60 seconds")
+        return {
+            "claims": [],
+            "logic_structure": "",
+            "detected_biases": [],
+            "source_verifier_instructions": {},
+            "perspective_instructions": {},
+            "agent_statuses": [
+                {
+                    "agent_id": "analyzer",
+                    "status": "error",
+                    "message": "Analyzer timed out",
+                    "progress": 0,
+                }
+            ],
+            "errors": [{"agent": "analyzer", "error": "timeout"}],
+        }
     except Exception as e:
+        logger.exception(f"[Analyzer] Unexpected error: {str(e)}")
         return {
             "claims": [],
             "logic_structure": "",

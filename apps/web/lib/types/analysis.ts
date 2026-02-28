@@ -139,11 +139,27 @@ export interface BiasExample {
   explanation: string;
 }
 
+// 반박 포인트 (Steel Man용)
+export interface RefutationPoint {
+  point: string; // 반박해야 할 핵심 포인트
+  counterArgument: string; // 반박 방법
+  importance: 'critical' | 'important' | 'minor';
+}
+
 // Steel Man 출력
 export interface SteelManOutput {
   opposingArgument: string;
   strengthenedArgument: string;
+  refutationPoints?: RefutationPoint[]; // 반박 포인트 3개
   expandedTopics?: ExpandedTopic[]; // 확장된 영역
+}
+
+// 생각 변화 점수 (Before/After)
+export interface MindShiftScore {
+  before: number; // 1-5
+  after: number | null; // 1-5, null until completed
+  change: number | null; // after - before
+  direction: 'strengthened' | 'weakened' | 'unchanged' | null;
 }
 
 // 확장된 영역 (관련 주제)
@@ -159,6 +175,7 @@ export interface AnalysisResult {
   perspective: PerspectivePanelData;
   bias: BiasPanelData;
   steelMan: SteelManOutput;
+  mindShift?: MindShiftScore; // 생각 변화 측정
 }
 
 export type PanelType = 'source' | 'perspective' | 'bias';

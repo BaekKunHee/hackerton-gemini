@@ -4,6 +4,7 @@ import type {
   BiasPanelData,
   SteelManOutput,
   AnalysisResult,
+  MindShiftScore,
 } from '../types';
 
 export const demoSourceData: SourcePanelData = {
@@ -247,6 +248,26 @@ export const demoSteelMan: SteelManOutput = {
     '이 기사의 주장이 과장된 부분이 있지만, 핵심 우려는 타당합니다. 확장실업률 21.3%는 공식 통계만으로 포착되지 않는 청년의 실질적 어려움을 반영하며, 주거비 상승과 저출산 문제는 실제로 심각한 사회적 과제입니다.',
   strengthenedArgument:
     '정확한 데이터를 기반으로 주장하면 더 설득력이 높아집니다. "실업률 25%"보다 "확장실업률 21.3%, 이는 5명 중 1명이 사실상 제대로 된 일자리를 못 구하고 있다는 뜻"이라고 말하면, 과장이라는 반론을 방어하면서도 문제의 심각성을 전달할 수 있습니다.',
+  refutationPoints: [
+    {
+      point: '"확장실업률 21.3%도 심각한 수치" 반박',
+      counterArgument:
+        'OECD 평균과 비교하면 한국이 특별히 높지 않습니다. 미국의 U-6 실업률(유사 지표)도 7%대입니다.',
+      importance: 'critical',
+    },
+    {
+      point: '"정부 정책이 주된 원인" 반박',
+      counterArgument:
+        '글로벌 고령화, 기술 변화, 코로나 영향 등 복합적 요인이 있습니다. 단일 원인 귀속은 논리적 오류입니다.',
+      importance: 'important',
+    },
+    {
+      point: '"청년만 피해자" 프레임 반박',
+      counterArgument:
+        '자영업자, 중장년층도 어려움을 겪고 있습니다. 세대 갈등 프레임은 문제를 단순화합니다.',
+      importance: 'minor',
+    },
+  ],
   expandedTopics: [
     {
       topic: '인구 정책',
@@ -281,11 +302,20 @@ export const demoSteelMan: SteelManOutput = {
   ],
 };
 
+// 데모용 Mind Shift 점수 (실제로는 사용자 입력에 따라 동적 생성)
+export const demoMindShift: MindShiftScore = {
+  before: 4,
+  after: 2,
+  change: -2,
+  direction: 'weakened',
+};
+
 export const demoResult: AnalysisResult = {
   source: demoSourceData,
   perspective: demoPerspectiveData,
   bias: demoBiasData,
   steelMan: demoSteelMan,
+  mindShift: demoMindShift,
 };
 
 export const DEMO_SOCRATES_QUESTIONS = [

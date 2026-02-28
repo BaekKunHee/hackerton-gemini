@@ -4,22 +4,40 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useChatStore } from '@/lib/store/useChatStore';
 import ChatMessage from './ChatMessage';
+import BeliefScoreSlider from './BeliefScoreSlider';
 import LoadingDots from '@/app/components/shared/LoadingDots';
 import GlassPanel from '@/app/components/shared/GlassPanel';
 
 interface SocratesChatProps {
   onSend: (message: string) => void;
   onConfirmation?: (agreed: boolean) => void;
+  onBeliefScore?: (score: number, phase: 'before' | 'after') => void;
 }
 
-export default function SocratesChat({ onSend, onConfirmation }: SocratesChatProps) {
+export default function SocratesChat({ onSend, onConfirmation, onBeliefScore }: SocratesChatProps) {
   const {
     messages,
+    phase,
     isLoading,
     isComplete,
     awaitingConfirmation,
     isSearching,
+    beliefScoreBefore,
+    awaitingBeliefScore,
+    setBeliefScoreBefore,
+    setBeliefScoreAfter,
+    setPhase,
   } = useChatStore();
+
+  const handleBeliefScore = (score: number) => {
+    if (awaitingBeliefScore === 'before') {
+      setBeliefScoreBefore(score);
+      onBeliefScore?.(score, 'before');
+    } else if (awaitingBeliefScore === 'after') {
+      setBeliefScoreAfter(score);
+      onBeliefScore?.(score, 'after');
+    }
+  };
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,9 +88,38 @@ export default function SocratesChat({ onSend, onConfirmation }: SocratesChatPro
         )}
       </div>
 
+      {/* Belief Score Input - Before */}
+      {awaitingBeliefScore === 'before' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <BeliefScoreSlider
+            phase="before"
+            onSubmit={handleBeliefScore}
+          />
+        </motion.div>
+      )}
+
+      {/* Belief Score Input - After */}
+      {awaitingBeliefScore === 'after' && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4"
+        >
+          <BeliefScoreSlider
+            phase="after"
+            onSubmit={handleBeliefScore}
+            previousScore={beliefScoreBefore ?? undefined}
+          />
+        </motion.div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
-        {messages.length === 0 && (
+        {messages.length === 0 && !awaitingBeliefScore && (
           <div className="flex items-center justify-center h-full">
             <p className="text-xs text-[var(--text-muted)] text-center">
               분석이 완료되면 대화가 시작됩니다

@@ -21,6 +21,9 @@ export type {
   InstinctItem,
   // Expanded topics
   ExpandedTopic,
+  // Mind shift & refutation
+  RefutationPoint,
+  MindShiftScore,
 } from './analysis';
 
 export type {

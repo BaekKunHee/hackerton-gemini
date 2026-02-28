@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, Suspense } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import Header from '@/app/components/shared/Header';
@@ -11,6 +11,7 @@ import PerspectivePanel from '@/app/components/panels/PerspectivePanel';
 import BiasPanel from '@/app/components/panels/BiasPanel';
 import SocratesChat from '@/app/components/chat/SocratesChat';
 import AnalysisCard from '@/app/components/result/AnalysisCard';
+import MindShiftCard from '@/app/components/result/MindShiftCard';
 import TabNav from '@/app/components/shared/TabNav';
 
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession';
@@ -46,6 +47,9 @@ function DashboardInner() {
   const steelMan = useAnalysisStore((s) => s.steelMan);
   const chatIsComplete = useChatStore((s) => s.isComplete);
   const chatMessages = useChatStore((s) => s.messages);
+  const beliefScoreBefore = useChatStore((s) => s.beliefScoreBefore);
+  const beliefScoreAfter = useChatStore((s) => s.beliefScoreAfter);
+  const phase = useChatStore((s) => s.phase);
 
   // Active panel tab (mobile view)
   const [activeTab, setActiveTab] = useState(0);
@@ -69,10 +73,19 @@ function DashboardInner() {
     [sendMessage]
   );
 
-  // Send first Socrates question when analysis completes and no messages yet
-  const handleAnalysisDoneEffect = useCallback(() => {
-    if (isDone && chatMessages.length === 0) {
-      // Auto-send the first Socrates question
+  const handleBeliefScore = useCallback(
+    (score: number, scorePhase: 'before' | 'after') => {
+      // Score is already saved in store by SocratesChat component
+      // This callback can be used for analytics or additional logic
+      console.log(`Belief score ${scorePhase}:`, score);
+    },
+    []
+  );
+
+  // Send first Socrates question after belief score is entered
+  useEffect(() => {
+    // Only send first question after belief_before score is entered
+    if (isDone && chatMessages.length === 0 && beliefScoreBefore !== null && phase === 'questions') {
       const firstQuestion = DEMO_SOCRATES_QUESTIONS[0];
       useChatStore.getState().addMessage({
         role: 'assistant',
@@ -80,12 +93,23 @@ function DashboardInner() {
         timestamp: new Date(),
       });
     }
-  }, [isDone, chatMessages.length]);
+  }, [isDone, chatMessages.length, beliefScoreBefore, phase]);
 
-  // Trigger auto-question effect
-  if (isDone && chatMessages.length === 0) {
-    handleAnalysisDoneEffect();
-  }
+  // Compute mind shift for display
+  const mindShift =
+    beliefScoreBefore !== null && beliefScoreAfter !== null
+      ? {
+          before: beliefScoreBefore,
+          after: beliefScoreAfter,
+          change: beliefScoreAfter - beliefScoreBefore,
+          direction:
+            beliefScoreAfter > beliefScoreBefore
+              ? ('strengthened' as const)
+              : beliefScoreAfter < beliefScoreBefore
+                ? ('weakened' as const)
+                : ('unchanged' as const),
+        }
+      : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--bg-primary)]">
@@ -243,9 +267,10 @@ function DashboardInner() {
                 <SocratesChat
                   onSend={handleSendMessage}
                   onConfirmation={handleConfirmation}
+                  onBeliefScore={handleBeliefScore}
                 />
 
-                {/* Analysis Card - shown when chat is complete */}
+                {/* Analysis Card + Mind Shift - shown when chat is complete */}
                 <AnimatePresence>
                   {chatIsComplete && steelMan ? (
                     <motion.div
@@ -253,7 +278,10 @@ function DashboardInner() {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.4 }}
+                      className="space-y-4"
                     >
+                      {/* Mind Shift Card - shows belief change */}
+                      {mindShift && <MindShiftCard mindShift={mindShift} />}
                       <AnalysisCard steelMan={steelMan} />
                     </motion.div>
                   ) : (

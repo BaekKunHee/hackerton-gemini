@@ -133,6 +133,9 @@ class FlipsideState(TypedDict):
     socrates_ready: bool
     conversation_context: dict
 
+    # Aggregate Output
+    steel_man: Optional[dict]
+
     # Status tracking (append-only for parallel nodes)
     agent_statuses: Annotated[list[AgentStatusUpdate], operator.add]
 
@@ -173,6 +176,9 @@ def get_initial_state(
         # Agent D outputs
         socrates_ready=False,
         conversation_context={},
+
+        # Aggregate outputs
+        steel_man=None,
 
         # Tracking
         agent_statuses=[],

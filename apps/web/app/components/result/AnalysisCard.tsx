@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import type { SteelManOutput, ExpandedTopic } from '@/lib/types';
+import type { SteelManOutput, ExpandedTopic, RefutationPoint } from '@/lib/types';
 import GlassPanel from '@/app/components/shared/GlassPanel';
 
 interface AnalysisCardProps {
@@ -30,9 +30,37 @@ function getRelevanceBgColor(relevance: ExpandedTopic['relevance']): string {
   }
 }
 
+function getImportanceConfig(importance: RefutationPoint['importance']) {
+  switch (importance) {
+    case 'critical':
+      return {
+        bg: 'rgba(239, 68, 68, 0.1)',
+        border: 'rgba(239, 68, 68, 0.3)',
+        text: '#ef4444',
+        label: '필수 반박',
+      };
+    case 'important':
+      return {
+        bg: 'rgba(251, 191, 36, 0.1)',
+        border: 'rgba(251, 191, 36, 0.3)',
+        text: '#fbbf24',
+        label: '중요',
+      };
+    case 'minor':
+      return {
+        bg: 'rgba(148, 163, 184, 0.1)',
+        border: 'rgba(148, 163, 184, 0.3)',
+        text: '#94a3b8',
+        label: '참고',
+      };
+  }
+}
+
 export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
   const hasExpandedTopics =
     steelMan.expandedTopics && steelMan.expandedTopics.length > 0;
+  const hasRefutationPoints =
+    steelMan.refutationPoints && steelMan.refutationPoints.length > 0;
 
   return (
     <GlassPanel animate>
@@ -65,11 +93,61 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
           </p>
         </motion.div>
 
+        {/* Refutation Points */}
+        {hasRefutationPoints && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-base">💡</span>
+              <p className="text-[11px] text-amber-400 font-medium uppercase tracking-wider">
+                반박해야 할 핵심 포인트
+              </p>
+            </div>
+            <div className="space-y-3">
+              {steelMan.refutationPoints!.map((point, index) => {
+                const config = getImportanceConfig(point.importance);
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.25 + index * 0.1 }}
+                    className="rounded-lg p-3"
+                    style={{
+                      backgroundColor: config.bg,
+                      borderLeft: `3px solid ${config.border}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: config.border, color: '#fff' }}
+                      >
+                        {config.label}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-[var(--text-primary)] mb-1">
+                      {point.point}
+                    </p>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      → {point.counterArgument}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
         {/* Strengthened Argument */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: hasRefutationPoints ? 0.55 : 0.25 }}
           className="rounded-xl bg-[var(--green-400)]/5 border border-[var(--green-400)]/20 p-4"
         >
           <p className="text-[11px] text-[var(--green-400)] mb-2 font-medium uppercase tracking-wider">

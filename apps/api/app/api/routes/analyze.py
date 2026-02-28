@@ -125,6 +125,7 @@ async def stream_analysis(session_id: str, request: Request):
             "common_facts": [],
             "divergence_points": [],
             "perspective_summary": "",
+            "steel_man": None,
         }
         conversation_context = dict(session.conversation_context or {})
 
@@ -165,6 +166,8 @@ async def stream_analysis(session_id: str, request: Request):
                         result_payload["source_summary"] = node_output["source_summary"]
                     if "perspective_summary" in node_output:
                         result_payload["perspective_summary"] = node_output["perspective_summary"]
+                    if "steel_man" in node_output and node_output["steel_man"]:
+                        result_payload["steel_man"] = node_output["steel_man"]
 
                     # Merge conversation context from parallel nodes for /api/chat.
                     if "conversation_context" in node_output:
@@ -263,9 +266,10 @@ async def stream_analysis(session_id: str, request: Request):
                         result_payload.get("detected_biases", []),
                         result_payload.get("claims", [])
                     ),
-                    "steelMan": {
+                    "steelMan": convert_keys(result_payload.get("steel_man", {})) or {
                         "opposingArgument": "",
                         "strengthenedArgument": "",
+                        "refutationPoints": [],
                     },
                 }
                 complete_data = {

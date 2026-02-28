@@ -1,10 +1,14 @@
 """Agent C: Perspective Explorer"""
 import json
+import asyncio
+import logging
 from google import genai
 from google.genai import types
 from app.core.config import settings
 from app.agents.prompts import PERSPECTIVE_EXPLORER_PROMPT
 from app.agents.utils import extract_json
+
+logger = logging.getLogger(__name__)
 
 
 async def perspective_explorer_node(state: dict) -> dict:
@@ -34,17 +38,43 @@ async def perspective_explorer_node(state: dict) -> dict:
         .replace("{claims}", json.dumps(claims, ensure_ascii=False))
     ) + "\n\nYou must respond in valid JSON format only."
 
+    logger.info(f"[PerspectiveExplorer] Starting exploration for topic: {topic[:50]}...")
+    logger.debug(f"[PerspectiveExplorer] Keywords: {keywords}")
+
     # Use Flash model with Google Search Grounding (fast search tasks)
-    response = await client.aio.models.generate_content(
-        model=settings.gemini_model_flash,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())],
-            temperature=0.7,
-        ),
-    )
+    try:
+        response = await asyncio.wait_for(
+            client.aio.models.generate_content(
+                model=settings.gemini_model_flash,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(google_search=types.GoogleSearch())],
+                    temperature=0.7,
+                ),
+            ),
+            timeout=60,
+        )
+    except asyncio.TimeoutError:
+        logger.error("[PerspectiveExplorer] Request timed out after 60 seconds")
+        return {
+            "perspectives": [],
+            "common_facts": [],
+            "divergence_points": [],
+            "perspective_summary": "Perspective exploration timed out",
+            "agent_statuses": [
+                {
+                    "agent_id": "perspective",
+                    "status": "error",
+                    "message": "Perspective exploration timed out",
+                    "progress": 0,
+                }
+            ],
+            "errors": [{"agent": "perspective", "error": "timeout"}],
+        }
 
     try:
+        logger.info(f"[PerspectiveExplorer] Response received, length: {len(response.text)}")
+        logger.debug(f"[PerspectiveExplorer] Raw response: {response.text[:500]}...")
         result = extract_json(response.text)
         if not result:
             result = {
@@ -75,6 +105,7 @@ async def perspective_explorer_node(state: dict) -> dict:
             ],
         }
     except Exception as e:
+        logger.exception(f"[PerspectiveExplorer] Unexpected error: {str(e)}")
         return {
             "perspectives": [],
             "common_facts": [],
