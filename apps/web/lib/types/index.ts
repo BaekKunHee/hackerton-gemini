@@ -14,6 +14,13 @@ export type {
   AnalysisResult,
   PanelType,
   PanelData,
+  // New bias/instinct types
+  CognitiveBiasType,
+  BiasItem,
+  InstinctType,
+  InstinctItem,
+  // Expanded topics
+  ExpandedTopic,
 } from './analysis';
 
 export type {

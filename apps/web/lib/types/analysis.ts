@@ -75,17 +75,52 @@ export interface DivergencePoint {
 
 // 편향 분석 패널 데이터
 export interface BiasPanelData {
-  biasScores: BiasScore[];
-  dominantBiases: string[];
+  // 새로운 분리된 구조
+  biases: BiasItem[]; // Main 편향 (인지적 편향)
+  instincts: InstinctItem[]; // Main 본능 (Hans Rosling)
   textExamples: BiasExample[];
   alternativeFraming?: string;
+
+  // Legacy support (기존 호환성)
+  biasScores?: BiasScore[];
+  dominantBiases?: string[];
 }
 
+// Main 편향 (Cognitive Biases)
+export type CognitiveBiasType =
+  | 'anchoring_bias' // 고정 편향
+  | 'confirmation_bias' // 확증편향
+  | 'outcome_bias'; // 결과 편향
+
+export interface BiasItem {
+  type: CognitiveBiasType;
+  score: number; // 0-100 (%)
+  reason: string; // 왜 이렇게 판단했는지
+  label: string; // 한국어 라벨
+}
+
+// Main 본능 (Hans Rosling Instincts)
+export type InstinctType =
+  | 'gap_instinct' // 간극 본능
+  | 'blame_instinct' // 비난 본능
+  | 'negativity_instinct' // 부정 본능
+  | 'generalization_instinct' // 일반화 본능
+  | 'single_perspective_instinct'; // 단일 관점 본능
+
+export interface InstinctItem {
+  type: InstinctType;
+  score: number; // 0-100 (%)
+  reason: string; // 왜 이렇게 판단했는지
+  label: string; // 한국어 라벨
+}
+
+// Legacy BiasScore (기존 호환성)
 export interface BiasScore {
   type: BiasType;
   score: number; // 0-1
 }
 
+// Legacy BiasType (기존 호환성)
 export type BiasType =
   | 'gap_instinct'
   | 'negativity_instinct'
@@ -100,7 +135,7 @@ export type BiasType =
 
 export interface BiasExample {
   text: string;
-  biasType: BiasType;
+  biasType: BiasType | CognitiveBiasType | InstinctType;
   explanation: string;
 }
 
@@ -108,6 +143,14 @@ export interface BiasExample {
 export interface SteelManOutput {
   opposingArgument: string;
   strengthenedArgument: string;
+  expandedTopics?: ExpandedTopic[]; // 확장된 영역
+}
+
+// 확장된 영역 (관련 주제)
+export interface ExpandedTopic {
+  topic: string; // 예: "노동 관점"
+  description: string; // 예: "AI 도입으로 인한 일자리 변화와 노동 시장 영향"
+  relevance: 'high' | 'medium' | 'low'; // 현재 주제와의 관련성
 }
 
 // 최종 분석 결과

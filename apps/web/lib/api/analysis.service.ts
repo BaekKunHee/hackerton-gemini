@@ -28,3 +28,13 @@ export async function sendChatMessage(
     body: JSON.stringify({ sessionId, message }),
   });
 }
+
+export async function sendConfirmation(
+  sessionId: string,
+  agreed: boolean
+): Promise<ChatResponse> {
+  return apiClient<ChatResponse>('/api/chat', {
+    method: 'PUT',
+    body: JSON.stringify({ sessionId, agreed }),
+  });
+}

@@ -76,4 +76,6 @@ export interface ChatResponse {
   response: string;
   step: number;
   isComplete: boolean;
+  awaitingConfirmation?: boolean; // Y/N 분기 대기 중
+  isSearching?: boolean; // 검색 중
 }

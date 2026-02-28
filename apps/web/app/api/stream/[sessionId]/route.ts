@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getSession, subscribeToSession } from '@/lib/session-store';
 import type { StreamEvent } from '@/lib/types';
+import { isBackendMode, backendUrl } from '@/lib/api/backend';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,28 @@ export async function GET(
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
+
+  if (isBackendMode()) {
+    const backendRes = await fetch(backendUrl(`/api/stream/${sessionId}`), {
+      headers: { Accept: 'text/event-stream' },
+    });
+
+    if (!backendRes.ok || !backendRes.body) {
+      return new Response(
+        JSON.stringify({ success: false, error: { code: 'BACKEND_ERROR', message: 'Failed to connect to backend stream' } }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(backendRes.body, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    });
+  }
 
   const session = getSession(sessionId);
   if (!session) {

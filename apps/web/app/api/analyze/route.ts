@@ -13,11 +13,13 @@ import {
   demoResult,
 } from '@/lib/demo/data';
 import type { AnalyzeRequest, AnalyzeResponse, ApiResponse } from '@/lib/types';
+import { isBackendMode, fetchBackend, convertKeys } from '@/lib/api/backend';
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AnalyzeRequest;
 
+    // Validation
     if (!body.type || !body.content) {
       return NextResponse.json<ApiResponse<never>>(
         {
@@ -57,10 +59,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (isBackendMode()) {
+      const raw = await fetchBackend<Record<string, unknown>>('/api/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ type: body.type, content: body.content }),
+      });
+      const data = convertKeys(raw) as AnalyzeResponse;
+      return NextResponse.json<ApiResponse<AnalyzeResponse>>({
+        success: true,
+        data,
+      });
+    }
+
+    // Demo mode
     const sessionId = generateSessionId();
     createSession(sessionId);
-
-    // Start demo simulation in background
     runDemoSimulation(sessionId);
 
     const response: AnalyzeResponse = {

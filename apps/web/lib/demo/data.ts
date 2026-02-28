@@ -153,22 +153,76 @@ export const demoPerspectiveData: PerspectivePanelData = {
 };
 
 export const demoBiasData: BiasPanelData = {
+  // 새로운 분리된 구조 (데모 시나리오 기준)
+  biases: [
+    {
+      type: 'confirmation_bias',
+      score: 82,
+      reason: '자신의 의견을 뒷받침하는 정보만 선택적으로 인용했습니다. 반대 의견이나 맥락을 제공하는 데이터는 생략되었습니다.',
+      label: '확증편향',
+    },
+    {
+      type: 'anchoring_bias',
+      score: 45,
+      reason: '초반에 제시된 "25%"라는 숫자가 이후 논의의 기준점이 되어, 실제 수치와의 차이를 희석시키고 있습니다.',
+      label: '고정편향',
+    },
+    {
+      type: 'outcome_bias',
+      score: 38,
+      reason: '현재 결과만으로 과거 정책을 평가하며, 당시 맥락이나 외부 요인은 고려하지 않았습니다.',
+      label: '결과편향',
+    },
+  ],
+  instincts: [
+    {
+      type: 'blame_instinct',
+      score: 71,
+      reason: '복잡한 사회 현상을 "정부의 무능"이라는 단일 원인에 귀속시키고 있습니다. 인구구조, 글로벌 경제, 기술 변화 등 다른 요인은 무시됩니다.',
+      label: '비난 본능',
+    },
+    {
+      type: 'single_perspective_instinct',
+      score: 58,
+      reason: '문제를 오직 "정책 실패" 프레임으로만 바라보고 있습니다. 시장, 인구, 글로벌 요인 등 다른 관점은 배제되었습니다.',
+      label: '단일관점 본능',
+    },
+    {
+      type: 'negativity_instinct',
+      score: 52,
+      reason: '개선된 지표(예: 전체 고용률 증가)는 언급하지 않고, 부정적인 측면만 강조하고 있습니다.',
+      label: '부정 본능',
+    },
+    {
+      type: 'gap_instinct',
+      score: 48,
+      reason: '"청년 vs 기성세대", "정부 vs 국민"처럼 이분법적 구도로 복잡한 현실을 단순화하고 있습니다.',
+      label: '간극 본능',
+    },
+    {
+      type: 'generalization_instinct',
+      score: 35,
+      reason: '특정 지역이나 직군의 사례를 전체 청년 세대로 일반화하는 경향이 있습니다.',
+      label: '일반화 본능',
+    },
+  ],
+  // Legacy support (기존 호환성)
   biasScores: [
-    { type: 'blame_instinct', score: 0.85 },
-    { type: 'size_instinct', score: 0.72 },
-    { type: 'single_perspective_instinct', score: 0.68 },
-    { type: 'negativity_instinct', score: 0.61 },
-    { type: 'urgency_instinct', score: 0.55 },
+    { type: 'blame_instinct', score: 0.71 },
+    { type: 'single_perspective_instinct', score: 0.58 },
+    { type: 'negativity_instinct', score: 0.52 },
     { type: 'gap_instinct', score: 0.48 },
     { type: 'generalization_instinct', score: 0.35 },
     { type: 'fear_instinct', score: 0.28 },
+    { type: 'size_instinct', score: 0.25 },
     { type: 'straight_line_instinct', score: 0.2 },
+    { type: 'urgency_instinct', score: 0.18 },
     { type: 'destiny_instinct', score: 0.15 },
   ],
   dominantBiases: [
     'blame_instinct',
-    'size_instinct',
     'single_perspective_instinct',
+    'negativity_instinct',
   ],
   textExamples: [
     {
@@ -179,9 +233,9 @@ export const demoBiasData: BiasPanelData = {
     },
     {
       text: '청년 실업률이 25%에 달한다',
-      biasType: 'size_instinct',
+      biasType: 'confirmation_bias',
       explanation:
-        '실제 수치(6.8%)를 맥락 없이 과장하여 문제의 크기를 부풀리고 있습니다.',
+        '확장실업률(21.3%)보다 높은 수치를 사용하여 주장을 뒷받침하려는 확증편향이 보입니다.',
     },
   ],
   alternativeFraming:
@@ -193,6 +247,38 @@ export const demoSteelMan: SteelManOutput = {
     '이 기사의 주장이 과장된 부분이 있지만, 핵심 우려는 타당합니다. 확장실업률 21.3%는 공식 통계만으로 포착되지 않는 청년의 실질적 어려움을 반영하며, 주거비 상승과 저출산 문제는 실제로 심각한 사회적 과제입니다.',
   strengthenedArgument:
     '정확한 데이터를 기반으로 주장하면 더 설득력이 높아집니다. "실업률 25%"보다 "확장실업률 21.3%, 이는 5명 중 1명이 사실상 제대로 된 일자리를 못 구하고 있다는 뜻"이라고 말하면, 과장이라는 반론을 방어하면서도 문제의 심각성을 전달할 수 있습니다.',
+  expandedTopics: [
+    {
+      topic: '인구 정책',
+      description:
+        '저출산·고령화와 청년 문제는 밀접하게 연결됩니다. 인구 정책 관점에서 청년 지원은 미래 세대 확보의 핵심입니다.',
+      relevance: 'high',
+    },
+    {
+      topic: '노동 시장 이중구조',
+      description:
+        '정규직/비정규직 격차, 대기업/중소기업 임금 차이가 청년 고용 질을 결정짓는 핵심 요인입니다.',
+      relevance: 'high',
+    },
+    {
+      topic: '주거 정책',
+      description:
+        '주거비 부담은 결혼·출산을 미루는 주요 원인 중 하나로, 청년 문제와 직결됩니다.',
+      relevance: 'medium',
+    },
+    {
+      topic: '교육과 취업 미스매치',
+      description:
+        '대학 졸업자 증가와 노동 시장 수요 불일치가 청년 실업의 구조적 원인으로 지목됩니다.',
+      relevance: 'medium',
+    },
+    {
+      topic: '세대 간 자산 불평등',
+      description:
+        '부동산 등 자산 축적 기회의 세대 간 격차가 청년의 경제적 자립을 어렵게 만듭니다.',
+      relevance: 'low',
+    },
+  ],
 };
 
 export const demoResult: AnalysisResult = {
@@ -208,3 +294,24 @@ export const DEMO_SOCRATES_QUESTIONS = [
   '3개 관점 중에서 가장 일리 있다고 생각하는 건 어떤 거예요?',
   '처음에 이 기사를 읽었을 때랑 지금, 생각이 달라진 부분이 있어요?',
 ];
+
+// Y/N 분기 후 응답 (Yes: 검색 트리거, No: 피드백 요청)
+export const DEMO_CONFIRMATION_RESPONSES = {
+  confirmation:
+    '지금까지 분석 결과를 살펴봤는데요, 제 분석에 대해 동의하시나요?',
+  yes: '좋아요! 그렇다면 기존 정보의 편향성을 보정할 수 있는 다른 정보들을 찾아볼게요. 잠시만 기다려주세요...',
+  no: '아, 그렇군요. 어떤 부분이 부족했는지 알려주시면 더 나은 분석을 제공할 수 있을 것 같아요. 어떤 점이 아쉬웠나요?',
+  searchResult: `좋은 소식이에요! 편향성을 보정할 수 있는 추가 정보를 찾았습니다:
+
+📊 **통계청 확장실업률 해석 가이드**
+- 확장실업률(21.3%)과 공식실업률(6.8%)의 차이는 "잠재구직자"와 "불완전취업자"를 포함하기 때문입니다.
+- 25%라는 수치는 어떤 공식 통계에서도 확인되지 않습니다.
+
+🔍 **OECD 청년고용 비교 보고서**
+- 한국의 청년 고용률은 OECD 평균과 비슷한 수준입니다.
+- 다만 "질 좋은 일자리" 비중은 상대적으로 낮은 편입니다.
+
+이 정보들을 참고하시면 기사의 주장을 더 객관적으로 평가할 수 있을 거예요. 분석 카드에서 최종 결과를 확인해보세요!`,
+  feedbackThanks:
+    '소중한 피드백 감사합니다. 다음 분석에 반영하겠습니다. 분석 카드에서 최종 결과를 확인해보세요!',
+};

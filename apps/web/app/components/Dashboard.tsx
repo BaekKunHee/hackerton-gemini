@@ -31,6 +31,7 @@ function DashboardInner() {
     isStarting,
     startAnalysis,
     sendMessage,
+    handleConfirmation,
     reset,
   } = useAnalysisSession();
 
@@ -239,7 +240,10 @@ function DashboardInner() {
                 className="grid grid-cols-1 gap-4 lg:grid-cols-2"
               >
                 {/* Socrates Chat */}
-                <SocratesChat onSend={handleSendMessage} />
+                <SocratesChat
+                  onSend={handleSendMessage}
+                  onConfirmation={handleConfirmation}
+                />
 
                 {/* Analysis Card - shown when chat is complete */}
                 <AnimatePresence>
