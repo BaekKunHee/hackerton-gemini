@@ -305,13 +305,21 @@ async def stream_analysis(session_id: str, request: Request):
                         if stream_open:
                             yield f"data: {json.dumps(sse_data)}\n\n"
 
-                    if "detected_biases" in node_output and node_output["detected_biases"]:
+                    # Send bias panel update when any bias-related data arrives
+                    has_bias_data = (
+                        ("detected_biases" in node_output and node_output["detected_biases"]) or
+                        ("user_instincts" in node_output and node_output["user_instincts"]) or
+                        ("information_biases" in node_output and node_output["information_biases"])
+                    )
+                    if has_bias_data:
                         sse_data = {
                             "type": "panel_update",
                             "panel": "bias",
                             "payload": build_bias_panel(
-                                node_output["detected_biases"],
-                                node_output.get("claims", [])
+                                node_output.get("detected_biases", result_payload.get("detected_biases", [])),
+                                node_output.get("claims", result_payload.get("claims", [])),
+                                user_instincts=node_output.get("user_instincts", []),
+                                information_biases=node_output.get("information_biases", []),
                             )
                         }
                         if stream_open:
@@ -331,7 +339,9 @@ async def stream_analysis(session_id: str, request: Request):
                                     result_payload.get("claims", []),
                                     expanded,
                                     related,
-                                    framing
+                                    framing,
+                                    user_instincts=result_payload.get("user_instincts", []),
+                                    information_biases=result_payload.get("information_biases", []),
                                 )
                             }
                             if stream_open:
@@ -372,7 +382,9 @@ async def stream_analysis(session_id: str, request: Request):
                         result_payload.get("claims", []),
                         result_payload.get("expanded_topics", []),
                         result_payload.get("related_content", []),
-                        result_payload.get("alternative_framing", "")
+                        result_payload.get("alternative_framing", ""),
+                        user_instincts=result_payload.get("user_instincts", []),
+                        information_biases=result_payload.get("information_biases", []),
                     ),
                     "steelMan": convert_keys(result_payload.get("steel_man", {})) or {
                         "opposingArgument": "",
