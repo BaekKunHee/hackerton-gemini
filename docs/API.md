@@ -181,6 +181,55 @@ interface ChatResponse {
 
 ---
 
+### 2.4 Y/N 확인 처리
+
+**PUT** `/api/chat`
+
+Q4 이후 "동의하시나요?" Y/N 분기를 처리합니다.
+
+#### Request
+
+```typescript
+interface ConfirmationRequest {
+  sessionId: string;
+  agreed: boolean;  // true: 동의, false: 비동의
+}
+```
+
+```bash
+curl -X PUT /api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "sess_abc123",
+    "agreed": false
+  }'
+```
+
+#### Response
+
+```typescript
+interface ConfirmationResponse {
+  response: string;
+  step: number;
+  phase: 'followup' | 'complete';
+  isSearchTriggered?: boolean;  // 비동의 시 추가 검색 트리거
+}
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "response": "그렇군요. 어떤 부분이 여전히 의문인가요? 추가로 찾아볼까요?",
+    "step": 5,
+    "phase": "followup",
+    "isSearchTriggered": true
+  }
+}
+```
+
+---
+
 ## 3. Server-Sent Events (SSE)
 
 ### 3.1 스트림 연결

@@ -52,41 +52,68 @@ Deployment   : Vercel
 │   ├── UI.md                    # UI/UX 설계
 │   ├── API.md                   # API 설계
 │   └── PATTERNS.md              # 클린 코드 패턴
-├── app/
-│   ├── page.tsx                 # 메인 페이지 (3패널 대시보드)
-│   ├── layout.tsx               # 루트 레이아웃
-│   ├── globals.css              # 글로벌 스타일
-│   ├── api/
-│   │   ├── analyze/route.ts     # 분석 시작 API
-│   │   ├── stream/route.ts      # SSE 스트리밍
-│   │   └── agents/              # 에이전트 관련 API
-│   └── components/
-│       ├── panels/              # 3개 분석 패널
-│       │   ├── SourcePanel.tsx  # Primary Source 검증
-│       │   ├── PerspectivePanel.tsx  # 다른 관점 탐색
-│       │   └── BiasPanel.tsx    # 편향 분석
-│       ├── agents/              # 에이전트 상태 표시
-│       ├── input/               # 콘텐츠 입력 영역
-│       ├── chat/                # 소크라테스 대화
-│       └── shared/              # 공통 컴포넌트
-├── lib/
-│   ├── gemini/                  # Gemini API 클라이언트
-│   │   ├── client.ts            # API 클라이언트
-│   │   └── prompts.ts           # 에이전트 프롬프트
-│   ├── agents/                  # 에이전트 로직
-│   │   ├── analyzer.ts          # Agent A: 분석기
-│   │   ├── source-verifier.ts   # Agent B: 소스 검증
-│   │   ├── perspective.ts       # Agent C: 관점 탐색
-│   │   └── socrates.ts          # Agent D: 대화
-│   ├── store/                   # Zustand 스토어
-│   │   ├── useAnalysisStore.ts  # 분석 상태
-│   │   ├── useAgentStore.ts     # 에이전트 상태
-│   │   └── useChatStore.ts      # 대화 상태
-│   └── types/                   # 타입 정의
-│       ├── analysis.ts          # 분석 결과 타입
-│       ├── agent.ts             # 에이전트 타입
-│       └── api.ts               # API 타입
-└── public/                      # 정적 파일
+├── apps/web/                    # Next.js 웹 앱 (모노레포)
+│   ├── app/
+│   │   ├── page.tsx             # 메인 페이지 (Dashboard 렌더링)
+│   │   ├── layout.tsx           # 루트 레이아웃
+│   │   ├── globals.css          # 글로벌 스타일
+│   │   ├── api/
+│   │   │   ├── analyze/route.ts         # POST: 분석 시작
+│   │   │   ├── chat/route.ts            # POST/PUT: 소크라테스 대화 + Y/N 분기
+│   │   │   ├── stream/[sessionId]/route.ts   # GET: SSE 스트리밍
+│   │   │   └── result/[sessionId]/route.ts   # GET: 분석 결과 조회
+│   │   └── components/
+│   │       ├── Dashboard.tsx            # 메인 대시보드 컴포넌트
+│   │       ├── panels/
+│   │       │   ├── PanelContainer.tsx   # 3패널 컨테이너
+│   │       │   ├── SourcePanel.tsx      # Primary Source 검증
+│   │       │   ├── PerspectivePanel.tsx # 다른 관점 탐색
+│   │       │   ├── BiasPanel.tsx        # 편향 분석
+│   │       │   └── BiasRadarChart.tsx   # 레이더 차트 시각화
+│   │       ├── agents/
+│   │       │   ├── AgentStatusBar.tsx   # 4개 에이전트 상태 표시
+│   │       │   └── AgentCard.tsx        # 개별 에이전트 카드
+│   │       ├── input/
+│   │       │   └── ContentInput.tsx     # URL/텍스트 입력 UI
+│   │       ├── chat/
+│   │       │   ├── SocratesChat.tsx     # 소크라테스 대화창
+│   │       │   └── ChatMessage.tsx      # 개별 메시지
+│   │       ├── result/
+│   │       │   ├── AnalysisCard.tsx     # Steel Man 분석 카드
+│   │       │   └── ShareButton.tsx      # 공유 버튼
+│   │       └── shared/                  # 공통 컴포넌트
+│   │           ├── Header.tsx
+│   │           ├── LoadingDots.tsx
+│   │           ├── TabNav.tsx
+│   │           ├── ProgressBar.tsx
+│   │           ├── TrustScore.tsx
+│   │           ├── GlassPanel.tsx
+│   │           ├── Badge.tsx
+│   │           └── Skeleton.tsx
+│   └── lib/
+│       ├── api/
+│       │   ├── backend.ts               # 백엔드 연결 헬퍼 (듀얼 모드)
+│       │   ├── client.ts                # API 클라이언트 (에러 핸들링)
+│       │   └── analysis.service.ts      # 분석 API 함수들
+│       ├── hooks/
+│       │   ├── useAnalysisSession.ts    # 통합 세션 관리 훅
+│       │   ├── useAnalysisStream.ts     # SSE 스트림 처리
+│       │   ├── useSSE.ts                # 저수준 SSE 연결
+│       │   └── useDemoMode.ts           # 데모 모드 자동 실행
+│       ├── store/                       # Zustand 스토어
+│       │   ├── useAnalysisStore.ts      # 분석 상태
+│       │   ├── useAgentStore.ts         # 에이전트 상태
+│       │   └── useChatStore.ts          # 대화 상태 + Y/N 분기
+│       ├── types/
+│       │   ├── index.ts                 # 타입 인덱스
+│       │   ├── analysis.ts              # 분석 결과 타입
+│       │   ├── agent.ts                 # 에이전트 타입
+│       │   ├── chat.ts                  # 대화 관련 타입
+│       │   └── api.ts                   # API 타입
+│       ├── demo/
+│       │   └── data.ts                  # 데모 데이터 및 질문/응답
+│       └── session-store.ts             # EventEmitter 세션 관리
+└── public/                              # 정적 파일
 ```
 
 ---
@@ -260,6 +287,60 @@ export const useAgentStore = create<AgentStoreState>((set) => ({
 }));
 ```
 
+### 대화 스토어 (Y/N 분기 포함)
+
+```typescript
+// lib/store/useChatStore.ts
+
+export type ChatPhase =
+  | 'questions'     // Q1-Q4 소크라테스 질문
+  | 'confirmation'  // "동의하시나요?" Y/N 분기
+  | 'followup'      // Y/N 선택 후 후속 대화
+  | 'complete';     // 대화 완료
+
+interface ChatStoreState {
+  messages: ChatMessage[];
+  step: number;              // 1-6 확장된 단계
+  phase: ChatPhase;
+  isLoading: boolean;
+  isComplete: boolean;
+
+  // Y/N 분기 상태
+  awaitingConfirmation: boolean;
+  userAgreed: boolean | null;
+  isSearching: boolean;      // 검색 트리거 중
+
+  // Actions
+  addMessage: (message: ChatMessage) => void;
+  setStep: (step: number) => void;
+  setPhase: (phase: ChatPhase) => void;
+  setLoading: (loading: boolean) => void;
+  setComplete: () => void;
+  setAwaitingConfirmation: (awaiting: boolean) => void;
+  setUserAgreed: (agreed: boolean) => void;
+  setSearching: (searching: boolean) => void;
+  reset: () => void;
+}
+```
+
+### 통합 세션 훅
+
+```typescript
+// lib/hooks/useAnalysisSession.ts
+// 3개 스토어(Analysis, Agent, Chat)를 통합 관리하는 고수준 훅
+
+const {
+  sessionId,
+  analysisStatus,
+  isStarting,
+  chatLoading,
+  startAnalysis,    // 분석 시작
+  sendMessage,      // 소크라테스 메시지 전송
+  handleConfirmation,  // Y/N 분기 처리
+  reset,
+} = useAnalysisSession();
+```
+
 ### 사용 예시
 
 ```tsx
@@ -335,6 +416,40 @@ type StreamEvent =
 ```env
 # .env.local
 GEMINI_API_KEY=your_gemini_api_key
+
+# 백엔드 모드 활성화 (설정 시 백엔드로 요청 전달, 미설정 시 데모 모드)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+---
+
+## 듀얼 모드 (백엔드/데모)
+
+프로젝트는 `NEXT_PUBLIC_API_URL` 환경변수 설정 여부로 자동 전환됩니다.
+
+### 백엔드 모드
+- 환경변수 설정 시 활성화
+- 실제 백엔드 API로 요청 전달
+- `lib/api/backend.ts`의 `fetchBackend()` 사용
+
+### 데모 모드
+- 환경변수 미설정 시 자동 활성화
+- `lib/session-store.ts` EventEmitter로 시뮬레이션
+- `lib/demo/data.ts`의 데모 데이터 사용
+- 백엔드 없이 전체 UX 테스트 가능
+
+```typescript
+// lib/api/backend.ts
+export function isBackendMode(): boolean {
+  return process.env.NEXT_PUBLIC_API_URL?.length > 0;
+}
+
+// 사용 예시
+if (isBackendMode()) {
+  return fetchBackend('/api/analyze', { ... });
+} else {
+  return runDemoSimulation(sessionId);
+}
 ```
 
 ---

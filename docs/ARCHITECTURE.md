@@ -405,19 +405,86 @@ interface BiasPanelData {
 
 ---
 
-## 6. 보안 고려사항
+## 6. 듀얼 모드 아키텍처
 
-### 6.1 API 키 관리
+프로젝트는 **백엔드 모드**와 **데모 모드**를 자동 전환합니다.
+
+### 6.1 모드 전환 원리
+
+```typescript
+// lib/api/backend.ts
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+export function isBackendMode(): boolean {
+  return BACKEND_URL.length > 0;
+}
+```
+
+### 6.2 백엔드 모드 (Production)
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Next.js API    │ ──▶ │  fetchBackend() │ ──▶ │  Backend API    │
+│  Routes         │     │  (Proxy)        │     │  (Gemini 등)    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+- `NEXT_PUBLIC_API_URL` 환경변수 설정 시 활성화
+- Next.js API 라우트가 백엔드로 요청 전달
+- `convertKeys()`: snake_case ↔ camelCase 자동 변환
+
+### 6.3 데모 모드 (Development/해커톤)
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Next.js API    │ ──▶ │  session-store  │ ──▶ │  Demo Data      │
+│  Routes         │     │  (EventEmitter) │     │  (lib/demo/)    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+- 환경변수 미설정 시 자동 활성화
+- `lib/session-store.ts`의 EventEmitter로 시뮬레이션
+- `setTimeout`으로 단계별 진행 (0ms → 8000ms)
+- 백엔드 없이 전체 UX 테스트 가능
+
+### 6.4 API 라우트 분기
+
+```typescript
+// app/api/analyze/route.ts
+export async function POST(request: Request) {
+  const { content, type } = await request.json();
+  const sessionId = generateSessionId();
+
+  if (isBackendMode()) {
+    // 백엔드로 요청 전달
+    await fetchBackend('/api/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ content, type }),
+    });
+  } else {
+    // 데모 시뮬레이션 실행
+    runDemoSimulation(sessionId);
+  }
+
+  return Response.json({ sessionId, status: 'started' });
+}
+```
+
+---
+
+## 7. 보안 고려사항
+
+### 7.1 API 키 관리
 - 환경 변수로 관리 (`GEMINI_API_KEY`)
 - 클라이언트에 노출 금지
 - 서버 사이드에서만 Gemini API 호출
 
-### 6.2 입력 검증
+### 7.2 입력 검증
 - URL 유효성 검사
 - 콘텐츠 길이 제한
 - XSS 방지
 
-### 6.3 Rate Limiting
+### 7.3 Rate Limiting
 - Gemini API 호출 제한
 - 세션당 분석 횟수 제한 (해커톤 크레딧 관리)
 
