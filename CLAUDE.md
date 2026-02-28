@@ -50,7 +50,8 @@ Deployment   : Vercel
 │   ├── ARCHITECTURE.md          # 시스템 아키텍처
 │   ├── AGENTS.md                # AI 에이전트 설계
 │   ├── UI.md                    # UI/UX 설계
-│   └── API.md                   # API 설계
+│   ├── API.md                   # API 설계
+│   └── PATTERNS.md              # 클린 코드 패턴
 ├── app/
 │   ├── page.tsx                 # 메인 페이지 (3패널 대시보드)
 │   ├── layout.tsx               # 루트 레이아웃

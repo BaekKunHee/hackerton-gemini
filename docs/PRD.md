@@ -151,3 +151,4 @@ Agent B/C 결과를 하드코딩한 '데모 모드'를 미리 만들어두기. �
 - [AI 에이전트 설계](AGENTS.md)
 - [UI/UX 설계](UI.md)
 - [API 설계](API.md)
+- [클린 코드 패턴](PATTERNS.md)

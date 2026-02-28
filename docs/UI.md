@@ -701,6 +701,8 @@ export default function AnalysisCard({ result, onShare }: AnalysisCardProps) {
 
 ## 참조 문서
 
+- [PRD 요약](PRD.md)
 - [시스템 아키텍처](ARCHITECTURE.md)
 - [AI 에이전트 설계](AGENTS.md)
 - [API 설계](API.md)
+- [클린 코드 패턴](PATTERNS.md)

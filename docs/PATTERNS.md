@@ -1030,5 +1030,8 @@ const BiasRadarChart = dynamic(
 ## 참조 문서
 
 - [CLAUDE.md](../CLAUDE.md) - 프로젝트 개요
-- [ARCHITECTURE.md](ARCHITECTURE.md) - 시스템 아키텍처
-- [API.md](API.md) - API 설계
+- [PRD 요약](PRD.md)
+- [시스템 아키텍처](ARCHITECTURE.md)
+- [AI 에이전트 설계](AGENTS.md)
+- [UI/UX 설계](UI.md)
+- [API 설계](API.md)

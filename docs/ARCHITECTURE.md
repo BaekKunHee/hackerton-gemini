@@ -425,6 +425,8 @@ interface BiasPanelData {
 
 ## 참조 문서
 
+- [PRD 요약](PRD.md)
 - [AI 에이전트 설계](AGENTS.md)
 - [UI/UX 설계](UI.md)
 - [API 설계](API.md)
+- [클린 코드 패턴](PATTERNS.md)

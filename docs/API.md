@@ -712,6 +712,8 @@ export { SOCRATES_PROMPT } from './prompts/socrates';
 
 ## 참조 문서
 
+- [PRD 요약](PRD.md)
 - [시스템 아키텍처](ARCHITECTURE.md)
 - [AI 에이전트 설계](AGENTS.md)
 - [UI/UX 설계](UI.md)
+- [클린 코드 패턴](PATTERNS.md)

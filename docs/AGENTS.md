@@ -536,6 +536,8 @@ class SourceVerifier extends BaseAgent<
 
 ## 참조 문서
 
+- [PRD 요약](PRD.md)
 - [시스템 아키텍처](ARCHITECTURE.md)
 - [UI/UX 설계](UI.md)
 - [API 설계](API.md)
+- [클린 코드 패턴](PATTERNS.md)
