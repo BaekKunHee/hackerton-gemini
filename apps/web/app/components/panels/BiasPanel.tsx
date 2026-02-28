@@ -160,8 +160,58 @@ export default function BiasPanel({ data, isLoading }: BiasPanelProps) {
         </h3>
       </div>
 
-      {/* New Structure: Biases + Instincts separated */}
-      {(hasBiases || hasInstincts) ? (
+      {/* New Agent A Structure: User Instincts + Information Biases */}
+      {(hasUserInstincts || hasInfoBiases) ? (
+        <>
+          {/* 사용자 본능 (Hans Rosling 10가지) */}
+          {hasUserInstincts && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-base">🧠</span>
+                <p className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+                  사용자 본능
+                </p>
+                <span className="text-[10px] text-[var(--text-muted)] ml-auto">Hans Rosling</span>
+              </div>
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+                {data.userInstincts!.map((item: UserInstinctItem, index: number) => (
+                  <BiasBarItem
+                    key={`instinct-${index}`}
+                    label={item.label || userInstinctLabels[item.instinctType] || item.instinctType}
+                    score={Math.round(item.confidence * 100)}
+                    reason={item.reasoning}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 미디어/정보 편향 */}
+          {hasInfoBiases && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-base">📰</span>
+                <p className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+                  미디어/정보 편향
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+                {data.informationBiases!.map((item: InformationBiasItem, index: number) => (
+                  <BiasBarItem
+                    key={`bias-${index}`}
+                    label={item.label || informationBiasLabels[item.biasType] || item.biasType}
+                    score={Math.round(item.confidence * 100)}
+                    reason={item.reasoning}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (hasBiases || hasInstincts) ? (
+        /* Legacy fallback: 기존 biases/instincts 구조 */
         <>
           {/* Main Biases (Cognitive Biases) */}
           {hasBiases && (
