@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import type { SteelManOutput, ExpandedTopic, RefutationPoint } from '@/lib/types';
 import GlassPanel from '@/app/components/shared/GlassPanel';
+import ShareButton from './ShareButton';
 
 interface AnalysisCardProps {
   steelMan: SteelManOutput;
@@ -217,15 +218,42 @@ export default function AnalysisCard({ steelMan }: AnalysisCardProps) {
         )}
       </div>
 
-      {/* Share button placeholder */}
-      <motion.button
+      {/* Share button */}
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: hasExpandedTopics ? 0.55 : 0.4 }}
-        className="mt-5 w-full rounded-xl py-3 text-sm font-medium text-[var(--text-secondary)] border border-white/[0.08] hover:border-white/[0.16] hover:bg-white/[0.03] transition-all"
+        className="mt-5 flex justify-center"
       >
-        분석 카드 공유하기
-      </motion.button>
+        <ShareButton
+          text={[
+            `[Flipside 분석 카드]`,
+            ``,
+            `상대 주장의 핵심:`,
+            steelMan.opposingArgument,
+            ``,
+            ...(hasRefutationPoints
+              ? [
+                  `반박 포인트:`,
+                  ...steelMan.refutationPoints!.map(
+                    (p) => `- [${p.importance}] ${p.point}: ${p.counterArgument}`
+                  ),
+                  ``,
+                ]
+              : []),
+            `더 깊은 이해를 위한 제안:`,
+            steelMan.strengthenedArgument,
+            ...(hasExpandedTopics
+              ? [
+                  ``,
+                  `관련 주제: ${steelMan.expandedTopics!.map((t) => t.topic).join(', ')}`,
+                ]
+              : []),
+            ``,
+            `— Flipside에서 분석됨`,
+          ].join('\n')}
+        />
+      </motion.div>
     </GlassPanel>
   );
 }
