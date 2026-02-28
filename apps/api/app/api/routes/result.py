@@ -1,6 +1,5 @@
 """Result retrieval endpoint"""
 from fastapi import APIRouter, HTTPException
-from app.schemas.analyze import AnalysisResult
 from app.services.session import session_store
 
 router = APIRouter(prefix="/api", tags=["result"])

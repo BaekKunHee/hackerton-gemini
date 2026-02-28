@@ -35,11 +35,13 @@ class OriginalSource(BaseModel):
 class Verification(BaseModel):
     """Verification result for a source."""
 
-    status: Literal["verified", "distorted", "missing_context", "unverified"] = Field(
+    status: Literal["verified", "distorted", "context_missing", "unverifiable"] = Field(
         ..., description="Verification status"
     )
     explanation: str = Field(..., description="Explanation of the verification result")
-    comparison: str = Field(..., description="Comparison between claim and original")
+    comparison: dict[str, str] = Field(
+        default_factory=dict, description="Claimed vs actual source comparison"
+    )
 
 
 class Claim(BaseModel):
@@ -99,7 +101,9 @@ class DivergencePoint(BaseModel):
     """A point where perspectives diverge."""
 
     topic: str = Field(..., description="Topic of divergence")
-    positions: list[str] = Field(default_factory=list, description="Different positions")
+    positions: dict[str, str] = Field(
+        default_factory=dict, description="Position map by perspective/group"
+    )
 
 
 class AnalysisResult(BaseModel):

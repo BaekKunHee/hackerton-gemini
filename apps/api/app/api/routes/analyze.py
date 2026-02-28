@@ -3,10 +3,8 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from uuid import uuid4
 import json
-import asyncio
 
-from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse, AnalysisResult
-from app.schemas.agent import AgentState
+from app.schemas.analyze import AnalyzeRequest, AnalyzeResponse
 from app.services.session import session_store
 from app.agents.graph import get_flipside_graph, get_initial_state
 
@@ -44,6 +42,21 @@ async def stream_analysis(session_id: str, request: Request):
 
     async def event_generator():
         graph = get_flipside_graph()
+        stream_open = True
+
+        # Aggregate and persist final analysis output for /api/result.
+        result_payload = {
+            "session_id": session_id,
+            "status": "analyzing",
+            "claims": [],
+            "detected_biases": [],
+            "verified_sources": [],
+            "overall_trust_score": 0,
+            "perspectives": [],
+            "common_facts": [],
+            "divergence_points": [],
+        }
+        conversation_context = dict(session.conversation_context or {})
 
         # Initial state
         initial_state = get_initial_state(
@@ -58,11 +71,42 @@ async def stream_analysis(session_id: str, request: Request):
         try:
             # Stream using 'updates' mode to get incremental state changes
             async for event in graph.astream(initial_state, stream_mode="updates"):
-                # Check for client disconnect
-                if await request.is_disconnected():
-                    break
+                # Keep running analysis even after disconnect so /result can be fetched.
+                if stream_open and await request.is_disconnected():
+                    stream_open = False
 
-                for node_name, node_output in event.items():
+                for _, node_output in event.items():
+                    # Accumulate result fields for final storage.
+                    if "claims" in node_output:
+                        result_payload["claims"] = node_output["claims"]
+                    if "detected_biases" in node_output:
+                        result_payload["detected_biases"] = node_output["detected_biases"]
+                    if "verified_sources" in node_output:
+                        result_payload["verified_sources"] = node_output["verified_sources"]
+                    if "overall_trust_score" in node_output:
+                        result_payload["overall_trust_score"] = node_output["overall_trust_score"]
+                    if "perspectives" in node_output:
+                        result_payload["perspectives"] = node_output["perspectives"]
+                    if "common_facts" in node_output:
+                        result_payload["common_facts"] = node_output["common_facts"]
+                    if "divergence_points" in node_output:
+                        result_payload["divergence_points"] = node_output["divergence_points"]
+
+                    # Merge conversation context from parallel nodes for /api/chat.
+                    if "conversation_context" in node_output:
+                        conversation_context = {
+                            **conversation_context,
+                            **node_output["conversation_context"],
+                        }
+                    if "source_summary" in node_output:
+                        conversation_context["source_summary"] = node_output["source_summary"]
+                    if "perspective_summary" in node_output:
+                        conversation_context["perspective_summary"] = node_output["perspective_summary"]
+                    if "detected_biases" in node_output:
+                        conversation_context["detected_biases"] = node_output["detected_biases"]
+                    if "claims" in node_output:
+                        conversation_context["claims"] = node_output["claims"]
+
                     # Send agent status updates
                     if "agent_statuses" in node_output:
                         for status in node_output["agent_statuses"]:
@@ -70,7 +114,8 @@ async def stream_analysis(session_id: str, request: Request):
                                 "type": "agent_status",
                                 "payload": status
                             }
-                            yield f"data: {json.dumps(sse_data)}\n\n"
+                            if stream_open:
+                                yield f"data: {json.dumps(sse_data)}\n\n"
 
                     # Send panel updates
                     if "verified_sources" in node_output and node_output["verified_sources"]:
@@ -83,7 +128,8 @@ async def stream_analysis(session_id: str, request: Request):
                                 "summary": node_output.get("source_summary", "")
                             }
                         }
-                        yield f"data: {json.dumps(sse_data)}\n\n"
+                        if stream_open:
+                            yield f"data: {json.dumps(sse_data)}\n\n"
 
                     if "perspectives" in node_output and node_output["perspectives"]:
                         sse_data = {
@@ -95,7 +141,8 @@ async def stream_analysis(session_id: str, request: Request):
                                 "divergence_points": node_output.get("divergence_points", [])
                             }
                         }
-                        yield f"data: {json.dumps(sse_data)}\n\n"
+                        if stream_open:
+                            yield f"data: {json.dumps(sse_data)}\n\n"
 
                     if "detected_biases" in node_output and node_output["detected_biases"]:
                         sse_data = {
@@ -106,23 +153,44 @@ async def stream_analysis(session_id: str, request: Request):
                                 "claims": node_output.get("claims", [])
                             }
                         }
-                        yield f"data: {json.dumps(sse_data)}\n\n"
+                        if stream_open:
+                            yield f"data: {json.dumps(sse_data)}\n\n"
 
-                    # Store results in session
-                    if "conversation_context" in node_output:
-                        session_store.update(
-                            session_id,
-                            conversation_context=node_output["conversation_context"]
-                        )
+                    # Persist incremental state for result/chat recovery.
+                    session_store.update(
+                        session_id,
+                        result=result_payload,
+                        conversation_context=conversation_context
+                    )
 
             # Mark session as done
-            session_store.update(session_id, status="done")
+            result_payload["status"] = "done"
+            session_store.update(
+                session_id,
+                status="done",
+                result=result_payload,
+                conversation_context=conversation_context
+            )
 
             # Send completion event
-            yield f"data: {json.dumps({'type': 'analysis_complete', 'payload': {'session_id': session_id}})}\n\n"
+            if stream_open:
+                complete_data = {
+                    "type": "analysis_complete",
+                    "payload": {
+                        "session_id": session_id,
+                        "result": result_payload
+                    }
+                }
+                yield f"data: {json.dumps(complete_data)}\n\n"
 
         except Exception as e:
-            session_store.update(session_id, status="error")
+            result_payload["status"] = "error"
+            session_store.update(
+                session_id,
+                status="error",
+                result=result_payload,
+                conversation_context=conversation_context
+            )
             error_data = {
                 "type": "error",
                 "payload": {
@@ -130,7 +198,8 @@ async def stream_analysis(session_id: str, request: Request):
                     "message": str(e)
                 }
             }
-            yield f"data: {json.dumps(error_data)}\n\n"
+            if stream_open:
+                yield f"data: {json.dumps(error_data)}\n\n"
 
     return StreamingResponse(
         event_generator(),

@@ -43,9 +43,9 @@ class OriginalSource(TypedDict):
 
 class Verification(TypedDict):
     """Verification result for a source."""
-    status: str  # 'verified' | 'distorted' | 'missing_context' | 'unverified'
+    status: str  # 'verified' | 'distorted' | 'context_missing' | 'unverifiable'
     explanation: str
-    comparison: str
+    comparison: dict[str, str]
 
 
 class VerifiedSource(TypedDict):
@@ -83,7 +83,7 @@ class Perspective(TypedDict):
 class DivergencePoint(TypedDict):
     """A point where perspectives diverge."""
     topic: str
-    positions: list[str]
+    positions: dict[str, str]
 
 
 class AgentStatusUpdate(TypedDict):
