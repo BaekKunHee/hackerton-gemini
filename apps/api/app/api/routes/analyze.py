@@ -109,15 +109,9 @@ def build_bias_panel(
     if information_biases:
         result["informationBiases"] = convert_keys(information_biases)
 
-    # Add alternative framing (always include with default if not provided)
+    # Add alternative framing only if AI generated it (no boilerplate fallback)
     if alternative_framing:
         result["alternativeFraming"] = alternative_framing
-    else:
-        # Default framing based on detected biases
-        if dominant_biases or user_instincts or information_biases:
-            result["alternativeFraming"] = "이 콘텐츠는 특정 관점에서 작성되었습니다. 동일한 사실을 다른 프레임으로 바라보면, 더 균형 잡힌 이해가 가능합니다. 위에서 감지된 편향 패턴을 인식하면서 다양한 관점의 정보를 함께 살펴보세요."
-        elif text_examples:
-            result["alternativeFraming"] = "제시된 텍스트 예시들을 다른 맥락에서 해석해보세요. 같은 사실도 어떤 프레임으로 보느냐에 따라 전혀 다른 결론에 도달할 수 있습니다."
 
     # Add expanded topics if available
     if expanded_topics:
@@ -185,6 +179,29 @@ async def stream_analysis(session_id: str, request: Request):
             "related_content": [],
         }
         conversation_context = dict(session.conversation_context or {})
+
+        # Panel ordering buffer: ensure panels are sent in order
+        # Layer 1 (source) -> Layer 2 (perspective) -> Layer 3 (bias)
+        panel_buffer = {
+            "source": None,       # Layer 1
+            "perspective": None,   # Layer 2
+            "bias": None,          # Layer 3
+        }
+        panels_sent = {"source": False, "perspective": False, "bias": False}
+        PANEL_ORDER = ["source", "perspective", "bias"]
+
+        def flush_panels():
+            """Yield buffered panels in guaranteed order."""
+            flushed = []
+            for panel_name in PANEL_ORDER:
+                if panels_sent[panel_name]:
+                    continue
+                if panel_buffer[panel_name] is not None:
+                    panels_sent[panel_name] = True
+                    flushed.append(panel_buffer[panel_name])
+                else:
+                    break  # Stop at first missing panel to preserve order
+            return flushed
 
         # Initial state
         initial_state = get_initial_state(
@@ -263,9 +280,9 @@ async def stream_analysis(session_id: str, request: Request):
                             if stream_open:
                                 yield f"data: {json.dumps(sse_data)}\n\n"
 
-                    # Send panel updates
+                    # Buffer panel updates (sent in guaranteed order below)
                     if "verified_sources" in node_output and node_output["verified_sources"]:
-                        sse_data = {
+                        panel_buffer["source"] = {
                             "type": "panel_update",
                             "panel": "source",
                             "payload": build_source_panel(
@@ -274,11 +291,9 @@ async def stream_analysis(session_id: str, request: Request):
                                 node_output.get("source_summary", "")
                             )
                         }
-                        if stream_open:
-                            yield f"data: {json.dumps(sse_data)}\n\n"
 
                     if "perspectives" in node_output and node_output["perspectives"]:
-                        sse_data = {
+                        panel_buffer["perspective"] = {
                             "type": "panel_update",
                             "panel": "perspective",
                             "payload": build_perspective_panel(
@@ -288,11 +303,10 @@ async def stream_analysis(session_id: str, request: Request):
                                 node_output.get("perspective_image"),
                             )
                         }
-                        if stream_open:
-                            yield f"data: {json.dumps(sse_data)}\n\n"
 
                     if "perspective_image" in node_output and node_output["perspective_image"]:
-                        sse_data = {
+                        # Update perspective panel with image (overwrite buffer)
+                        panel_buffer["perspective"] = {
                             "type": "panel_update",
                             "panel": "perspective",
                             "payload": build_perspective_panel(
@@ -302,17 +316,15 @@ async def stream_analysis(session_id: str, request: Request):
                                 result_payload.get("perspective_image"),
                             )
                         }
-                        if stream_open:
-                            yield f"data: {json.dumps(sse_data)}\n\n"
 
-                    # Send bias panel update when any bias-related data arrives
+                    # Buffer bias panel update when any bias-related data arrives
                     has_bias_data = (
                         ("detected_biases" in node_output and node_output["detected_biases"]) or
                         ("user_instincts" in node_output and node_output["user_instincts"]) or
                         ("information_biases" in node_output and node_output["information_biases"])
                     )
                     if has_bias_data:
-                        sse_data = {
+                        panel_buffer["bias"] = {
                             "type": "panel_update",
                             "panel": "bias",
                             "payload": build_bias_panel(
@@ -322,16 +334,14 @@ async def stream_analysis(session_id: str, request: Request):
                                 information_biases=node_output.get("information_biases", []),
                             )
                         }
-                        if stream_open:
-                            yield f"data: {json.dumps(sse_data)}\n\n"
 
-                    # Send expanded topics, related content, and alternative framing as bias panel update
+                    # Update bias buffer with expanded topics/related content/framing
                     if "expanded_topics" in node_output or "related_content" in node_output or "alternative_framing" in node_output:
                         expanded = node_output.get("expanded_topics", [])
                         related = node_output.get("related_content", [])
                         framing = node_output.get("alternative_framing", "")
                         if expanded or related or framing:
-                            sse_data = {
+                            panel_buffer["bias"] = {
                                 "type": "panel_update",
                                 "panel": "bias",
                                 "payload": build_bias_panel(
@@ -344,8 +354,11 @@ async def stream_analysis(session_id: str, request: Request):
                                     information_biases=result_payload.get("information_biases", []),
                                 )
                             }
-                            if stream_open:
-                                yield f"data: {json.dumps(sse_data)}\n\n"
+
+                    # Flush buffered panels in guaranteed order: source → perspective → bias
+                    if stream_open:
+                        for panel_sse in flush_panels():
+                            yield f"data: {json.dumps(panel_sse)}\n\n"
 
                     # Persist incremental state for result/chat recovery.
                     session_store.update(
@@ -353,6 +366,13 @@ async def stream_analysis(session_id: str, request: Request):
                         result=result_payload,
                         conversation_context=conversation_context
                     )
+
+            # Flush any remaining buffered panels before completion
+            if stream_open:
+                for panel_name in PANEL_ORDER:
+                    if not panels_sent[panel_name] and panel_buffer[panel_name] is not None:
+                        panels_sent[panel_name] = True
+                        yield f"data: {json.dumps(panel_buffer[panel_name])}\n\n"
 
             # Mark session as done
             result_payload["status"] = "done"

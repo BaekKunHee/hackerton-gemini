@@ -1,5 +1,5 @@
 """Agent A: Analyzer (Orchestrator)"""
-import json
+import re
 import asyncio
 import logging
 from google import genai
@@ -9,6 +9,26 @@ from app.agents.prompts import ANALYZER_PROMPT
 from app.agents.utils import extract_json
 
 logger = logging.getLogger(__name__)
+
+_YOUTUBE_RE = re.compile(
+    r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/shorts/)([^&\s?#]+)'
+)
+
+
+def _is_youtube_url(url: str) -> bool:
+    return bool(_YOUTUBE_RE.search(url))
+
+
+def _build_contents(content: str, content_type: str, prompt_text: str):
+    """Build Gemini contents: multimodal Part for YouTube URLs, plain text otherwise."""
+    if content_type == "url" and _is_youtube_url(content):
+        # Pass the YouTube URL as a file_data Part so Gemini can actually
+        # watch/read the video instead of guessing from the URL string.
+        return [
+            types.Part(file_data=types.FileData(file_uri=content, mime_type="video/*")),
+            types.Part(text=prompt_text),
+        ]
+    return prompt_text
 
 
 async def analyzer_node(state: dict) -> dict:
@@ -22,11 +42,17 @@ async def analyzer_node(state: dict) -> dict:
 
     client = genai.Client(api_key=settings.gemini_api_key)
 
-    # Avoid str.format on JSON examples inside the prompt template.
-    prompt = ANALYZER_PROMPT.replace("{content}", state["content"])
+    content = state["content"]
+    content_type = state.get("content_type", "text")
 
-    logger.info(f"[Analyzer] Starting analysis for content length: {len(state.get('content', ''))}")
+    # Avoid str.format on JSON examples inside the prompt template.
+    prompt_text = ANALYZER_PROMPT.replace("{content}", content)
+    contents = _build_contents(content, content_type, prompt_text)
+
+    logger.info(f"[Analyzer] Starting analysis for content (type={content_type}): {content[:100]}...")
     logger.debug(f"[Analyzer] Using model: {settings.gemini_model_pro}")
+    if content_type == "url" and _is_youtube_url(content):
+        logger.info("[Analyzer] YouTube URL detected – passing as multimodal Part")
 
     try:
         # Prevent a single slow model call from blocking the whole graph.
@@ -35,7 +61,7 @@ async def analyzer_node(state: dict) -> dict:
             response = await asyncio.wait_for(
                 client.aio.models.generate_content(
                     model=settings.gemini_model_pro,
-                    contents=prompt,
+                    contents=contents,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         temperature=0.7,
@@ -49,7 +75,7 @@ async def analyzer_node(state: dict) -> dict:
             response = await asyncio.wait_for(
                 client.aio.models.generate_content(
                     model=settings.gemini_model_flash,
-                    contents=prompt,
+                    contents=contents,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
                         temperature=0.7,

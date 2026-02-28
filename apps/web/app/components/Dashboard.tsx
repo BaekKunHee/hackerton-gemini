@@ -55,6 +55,7 @@ function DashboardInner() {
   const isAnalyzing = analysisStatus === 'analyzing';
   const isDone = analysisStatus === 'done';
   const isError = analysisStatus === 'error';
+  const isReadyForChat = isDone || (panels.source && panels.bias && panels.perspective);
 
   // User submits content → start analysis immediately
   const handleSubmit = useCallback(
@@ -318,7 +319,7 @@ function DashboardInner() {
           {/* === CTA: Transition to Socrates Chat === */}
           {/* Show CTA when all panels are loaded OR analysis is done */}
           <AnimatePresence>
-            {(isDone || (panels.source && panels.bias && panels.perspective)) && !showChat && (
+            {isReadyForChat && !showChat && (
               <motion.div
                 key="chat-cta"
                 initial={{ opacity: 0, y: 20 }}
@@ -358,7 +359,7 @@ function DashboardInner() {
 
           {/* Socrates Chat + Analysis Card - shown after CTA click */}
           <AnimatePresence>
-            {isDone && showChat && (
+            {isReadyForChat && showChat && (
               <motion.div
                 key="chat-section"
                 initial={{ opacity: 0, y: 20 }}
