@@ -388,8 +388,9 @@ function DashboardInner() {
           </div>
 
           {/* === CTA: Transition to Socrates Chat === */}
+          {/* Show CTA when all panels are loaded OR analysis is done */}
           <AnimatePresence>
-            {isDone && !showChat && (
+            {(isDone || (panels.source && panels.bias && panels.perspective)) && !showChat && (
               <motion.div
                 key="chat-cta"
                 initial={{ opacity: 0, y: 20 }}
