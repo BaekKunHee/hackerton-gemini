@@ -56,12 +56,40 @@ export interface PerspectivePanelData {
   };
 }
 
+// 프레임 유형 분류
+export type FrameType =
+  | 'economic' // 경제적 프레임
+  | 'social' // 사회적 프레임
+  | 'political' // 정치적 프레임
+  | 'ethical' // 윤리적 프레임
+  | 'scientific' // 과학적 프레임
+  | 'emotional' // 감정적 프레임
+  | 'historical' // 역사적 프레임
+  | 'other'; // 기타
+
+// 핵심 포인트 상세 정보
+export interface KeyPointDetail {
+  point: string; // 핵심 포인트
+  explanation: string; // 상세 설명
+  supportingData?: string; // 뒷받침 데이터 (optional)
+}
+
+// 근거 자료
+export interface EvidenceItem {
+  type: 'statistic' | 'quote' | 'study' | 'example' | 'expert_opinion';
+  content: string; // 근거 내용
+  source?: string; // 출처 (optional)
+  reliability?: 'high' | 'medium' | 'low'; // 신뢰도 (optional)
+}
+
 export interface Perspective {
   id: number;
   source: {
     url: string;
     title: string;
     publisher: string;
+    publishedDate?: string; // 발행일 (optional)
+    credibilityScore?: number; // 신뢰도 점수 (optional)
   };
   mainClaim: string;
   frame: string;
@@ -71,6 +99,14 @@ export interface Perspective {
     emotional: number; // -1 ~ 1
     complexity: number; // -1 ~ 1
   };
+
+  // 확장 필드 (모두 optional로 하위 호환성 보장)
+  mainClaimReasoning?: string; // 논증 근거 설명
+  frameType?: FrameType; // 프레임 유형 분류
+  frameDescription?: string; // 프레임 상세 설명
+  keyPointDetails?: KeyPointDetail[]; // 각 포인트 상세 설명
+  evidence?: EvidenceItem[]; // 근거 자료
+  methodology?: string; // 접근 방법론
 }
 
 export interface DivergencePoint {

@@ -14,6 +14,10 @@ export type {
   AnalysisResult,
   PanelType,
   PanelData,
+  // Perspective extended types (대안적 프레임 상세화)
+  FrameType,
+  KeyPointDetail,
+  EvidenceItem,
   // New bias/instinct types (Agent A 응답 구조)
   UserInstinctType,
   UserInstinctItem,

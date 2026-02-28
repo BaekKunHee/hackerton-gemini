@@ -85,7 +85,49 @@ async def perspective_explorer_node(state: dict) -> dict:
                 "summary": "",
             }
 
-        perspectives = result.get("perspectives", [])
+        raw_perspectives = result.get("perspectives", [])
+
+        # snake_case -> camelCase 변환 (프론트엔드 호환성)
+        perspectives = []
+        for p in raw_perspectives:
+            source = p.get("source", {})
+            transformed = {
+                "id": p.get("id"),
+                "source": {
+                    "url": source.get("url", ""),
+                    "title": source.get("title", ""),
+                    "publisher": source.get("publisher", ""),
+                    "publishedDate": source.get("published_date"),
+                    "credibilityScore": source.get("credibility_score"),
+                },
+                "mainClaim": p.get("main_claim", ""),
+                "mainClaimReasoning": p.get("main_claim_reasoning"),
+                "frame": p.get("frame", ""),
+                "frameType": p.get("frame_type"),
+                "frameDescription": p.get("frame_description"),
+                "keyPoints": p.get("key_points", []),
+                "keyPointDetails": [
+                    {
+                        "point": kp.get("point", ""),
+                        "explanation": kp.get("explanation", ""),
+                        "supportingData": kp.get("supporting_data"),
+                    }
+                    for kp in (p.get("key_point_details") or [])
+                ] if p.get("key_point_details") else None,
+                "evidence": [
+                    {
+                        "type": ev.get("type", ""),
+                        "content": ev.get("content", ""),
+                        "source": ev.get("source"),
+                        "reliability": ev.get("reliability"),
+                    }
+                    for ev in (p.get("evidence") or [])
+                ] if p.get("evidence") else None,
+                "methodology": p.get("methodology"),
+                "spectrum": p.get("spectrum", {"political": 0, "emotional": 0, "complexity": 0}),
+            }
+            perspectives.append(transformed)
+
         perspective_image = None
         if perspectives:
             try:
