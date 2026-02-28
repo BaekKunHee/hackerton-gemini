@@ -11,6 +11,74 @@ from app.agents.graph import get_flipside_graph, get_initial_state
 router = APIRouter(prefix="/api", tags=["analyze"])
 
 
+def to_camel_case(snake_str: str) -> str:
+    parts = snake_str.split('_')
+    return parts[0] + ''.join(p.capitalize() for p in parts[1:])
+
+
+def convert_keys(obj):
+    if isinstance(obj, dict):
+        return {to_camel_case(k): convert_keys(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [convert_keys(i) for i in obj]
+    return obj
+
+
+def build_source_panel(verified_sources: list, trust_score: int, summary: str) -> dict:
+    """Build SourcePanelData matching frontend type."""
+    converted = convert_keys(verified_sources)
+    overall_status = "verified"
+    if converted:
+        statuses = [s.get("verification", {}).get("status", "verified") for s in converted]
+        if "distorted" in statuses:
+            overall_status = "distorted"
+        elif "context_missing" in statuses:
+            overall_status = "context_missing"
+    return {
+        "originalSources": converted,
+        "verificationStatus": overall_status,
+        "trustScore": trust_score,
+        "summary": summary,
+    }
+
+
+def build_perspective_panel(perspectives: list, common_facts: list, divergence_points: list) -> dict:
+    """Build PerspectivePanelData matching frontend type."""
+    return {
+        "perspectives": convert_keys(perspectives),
+        "commonFacts": common_facts,
+        "divergencePoints": convert_keys(divergence_points),
+    }
+
+
+def build_bias_panel(detected_biases: list, claims: list) -> dict:
+    """Build BiasPanelData matching frontend type."""
+    bias_scores = []
+    dominant_biases = []
+    text_examples = []
+
+    for bias in detected_biases:
+        bias_type = bias.get("type", "")
+        confidence = bias.get("confidence", 0)
+        example = bias.get("example", "")
+
+        bias_scores.append({"type": bias_type, "score": confidence})
+        if confidence >= 0.5:
+            dominant_biases.append(bias_type)
+        if example:
+            text_examples.append({
+                "text": example,
+                "biasType": bias_type,
+                "explanation": f"Detected {bias_type.replace('_', ' ')} with {confidence:.0%} confidence",
+            })
+
+    return {
+        "biasScores": bias_scores,
+        "dominantBiases": dominant_biases,
+        "textExamples": text_examples,
+    }
+
+
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def start_analysis(request: AnalyzeRequest):
     """Start a new analysis session."""
@@ -52,9 +120,11 @@ async def stream_analysis(session_id: str, request: Request):
             "detected_biases": [],
             "verified_sources": [],
             "overall_trust_score": 0,
+            "source_summary": "",
             "perspectives": [],
             "common_facts": [],
             "divergence_points": [],
+            "perspective_summary": "",
         }
         conversation_context = dict(session.conversation_context or {})
 
@@ -91,6 +161,10 @@ async def stream_analysis(session_id: str, request: Request):
                         result_payload["common_facts"] = node_output["common_facts"]
                     if "divergence_points" in node_output:
                         result_payload["divergence_points"] = node_output["divergence_points"]
+                    if "source_summary" in node_output:
+                        result_payload["source_summary"] = node_output["source_summary"]
+                    if "perspective_summary" in node_output:
+                        result_payload["perspective_summary"] = node_output["perspective_summary"]
 
                     # Merge conversation context from parallel nodes for /api/chat.
                     if "conversation_context" in node_output:
@@ -112,7 +186,7 @@ async def stream_analysis(session_id: str, request: Request):
                         for status in node_output["agent_statuses"]:
                             sse_data = {
                                 "type": "agent_status",
-                                "payload": status
+                                "payload": convert_keys(status)
                             }
                             if stream_open:
                                 yield f"data: {json.dumps(sse_data)}\n\n"
@@ -122,11 +196,11 @@ async def stream_analysis(session_id: str, request: Request):
                         sse_data = {
                             "type": "panel_update",
                             "panel": "source",
-                            "payload": {
-                                "sources": node_output["verified_sources"],
-                                "trust_score": node_output.get("overall_trust_score", 0),
-                                "summary": node_output.get("source_summary", "")
-                            }
+                            "payload": build_source_panel(
+                                node_output["verified_sources"],
+                                node_output.get("overall_trust_score", 0),
+                                node_output.get("source_summary", "")
+                            )
                         }
                         if stream_open:
                             yield f"data: {json.dumps(sse_data)}\n\n"
@@ -135,11 +209,11 @@ async def stream_analysis(session_id: str, request: Request):
                         sse_data = {
                             "type": "panel_update",
                             "panel": "perspective",
-                            "payload": {
-                                "perspectives": node_output["perspectives"],
-                                "common_facts": node_output.get("common_facts", []),
-                                "divergence_points": node_output.get("divergence_points", [])
-                            }
+                            "payload": build_perspective_panel(
+                                node_output["perspectives"],
+                                node_output.get("common_facts", []),
+                                node_output.get("divergence_points", [])
+                            )
                         }
                         if stream_open:
                             yield f"data: {json.dumps(sse_data)}\n\n"
@@ -148,10 +222,10 @@ async def stream_analysis(session_id: str, request: Request):
                         sse_data = {
                             "type": "panel_update",
                             "panel": "bias",
-                            "payload": {
-                                "biases": node_output["detected_biases"],
-                                "claims": node_output.get("claims", [])
-                            }
+                            "payload": build_bias_panel(
+                                node_output["detected_biases"],
+                                node_output.get("claims", [])
+                            )
                         }
                         if stream_open:
                             yield f"data: {json.dumps(sse_data)}\n\n"
@@ -174,11 +248,31 @@ async def stream_analysis(session_id: str, request: Request):
 
             # Send completion event
             if stream_open:
+                analysis_result = {
+                    "source": build_source_panel(
+                        result_payload.get("verified_sources", []),
+                        result_payload.get("overall_trust_score", 0),
+                        result_payload.get("source_summary", "")
+                    ),
+                    "perspective": build_perspective_panel(
+                        result_payload.get("perspectives", []),
+                        result_payload.get("common_facts", []),
+                        result_payload.get("divergence_points", [])
+                    ),
+                    "bias": build_bias_panel(
+                        result_payload.get("detected_biases", []),
+                        result_payload.get("claims", [])
+                    ),
+                    "steelMan": {
+                        "opposingArgument": "",
+                        "strengthenedArgument": "",
+                    },
+                }
                 complete_data = {
                     "type": "analysis_complete",
                     "payload": {
-                        "session_id": session_id,
-                        "result": result_payload
+                        "sessionId": session_id,
+                        "result": analysis_result,
                     }
                 }
                 yield f"data: {json.dumps(complete_data)}\n\n"

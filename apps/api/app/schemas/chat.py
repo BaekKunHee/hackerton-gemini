@@ -1,12 +1,14 @@
 """Chat request and response schemas for Socrates dialogue."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class ChatRequest(BaseModel):
     """Request for Socrates dialogue."""
 
-    session_id: str = Field(..., description="Analysis session identifier")
+    model_config = ConfigDict(populate_by_name=True)
+
+    session_id: str = Field(..., alias="sessionId", description="Analysis session identifier")
     message: str = Field(..., description="User's message")
 
 

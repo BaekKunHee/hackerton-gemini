@@ -52,11 +52,11 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
       status: 'done',
       ...(result && {
         panels: {
-          source: result.source,
-          perspective: result.perspective,
-          bias: result.bias,
+          source: result.source ?? null,
+          perspective: result.perspective ?? null,
+          bias: result.bias ?? null,
         },
-        steelMan: result.steelMan,
+        steelMan: result.steelMan ?? null,
       }),
     }),
 

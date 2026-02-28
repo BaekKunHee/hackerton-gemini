@@ -4,6 +4,7 @@ from google import genai
 from google.genai import types
 from app.core.config import settings
 from app.agents.prompts import ANALYZER_PROMPT
+from app.agents.utils import extract_json
 
 
 async def analyzer_node(state: dict) -> dict:
@@ -30,32 +31,55 @@ async def analyzer_node(state: dict) -> dict:
     )
 
     try:
-        result = json.loads(response.text)
-    except json.JSONDecodeError:
-        # Fallback if JSON parsing fails
-        result = {
-            "claims": [],
-            "logic_structure": response.text,
-            "detected_biases": [],
-            "agent_instructions": {},
-        }
-
-    return {
-        "claims": result.get("claims", []),
-        "logic_structure": result.get("logic_structure", ""),
-        "detected_biases": result.get("detected_biases", []),
-        "source_verifier_instructions": result.get("agent_instructions", {}).get(
-            "source_verifier", {}
-        ),
-        "perspective_instructions": result.get("agent_instructions", {}).get(
-            "perspective_explorer", {}
-        ),
-        "agent_statuses": [
-            {
-                "agent_id": "analyzer",
-                "status": "done",
-                "message": "Analysis complete",
-                "progress": 100,
+        result = extract_json(response.text)
+        if not result:
+            # Fallback if JSON parsing fails
+            result = {
+                "claims": [],
+                "logic_structure": response.text,
+                "detected_biases": [],
+                "agent_instructions": {},
             }
-        ],
-    }
+
+        return {
+            "claims": result.get("claims", []),
+            "logic_structure": result.get("logic_structure", ""),
+            "detected_biases": result.get("detected_biases", []),
+            "source_verifier_instructions": result.get("agent_instructions", {}).get(
+                "source_verifier", {}
+            ),
+            "perspective_instructions": result.get("agent_instructions", {}).get(
+                "perspective_explorer", {}
+            ),
+            "agent_statuses": [
+                {
+                    "agent_id": "analyzer",
+                    "status": "thinking",
+                    "message": "Analyzing content...",
+                    "progress": 50,
+                },
+                {
+                    "agent_id": "analyzer",
+                    "status": "done",
+                    "message": "Analysis complete",
+                    "progress": 100,
+                },
+            ],
+        }
+    except Exception as e:
+        return {
+            "claims": [],
+            "logic_structure": "",
+            "detected_biases": [],
+            "source_verifier_instructions": {},
+            "perspective_instructions": {},
+            "agent_statuses": [
+                {
+                    "agent_id": "analyzer",
+                    "status": "error",
+                    "message": f"Analyzer failed: {str(e)}",
+                    "progress": 0,
+                }
+            ],
+            "errors": [{"agent": "analyzer", "error": str(e)}],
+        }
