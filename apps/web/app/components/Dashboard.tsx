@@ -12,6 +12,7 @@ import BiasPanel from '@/app/components/panels/BiasPanel';
 import SocratesChat from '@/app/components/chat/SocratesChat';
 import AnalysisCard from '@/app/components/result/AnalysisCard';
 import MindShiftCard from '@/app/components/result/MindShiftCard';
+import BeliefScoreSlider from '@/app/components/chat/BeliefScoreSlider';
 import TabNav from '@/app/components/shared/TabNav';
 
 import { useAnalysisSession } from '@/lib/hooks/useAnalysisSession';
@@ -33,7 +34,7 @@ function DashboardInner() {
     startAnalysis,
     sendMessage,
     handleConfirmation,
-    reset,
+    reset: sessionReset,
   } = useAnalysisSession();
 
   // SSE stream connection
@@ -50,20 +51,39 @@ function DashboardInner() {
   const beliefScoreBefore = useChatStore((s) => s.beliefScoreBefore);
   const beliefScoreAfter = useChatStore((s) => s.beliefScoreAfter);
   const phase = useChatStore((s) => s.phase);
+  const setChatComplete = useChatStore((s) => s.setComplete);
 
   // Active panel tab (mobile view)
   const [activeTab, setActiveTab] = useState(0);
 
+  // Pending input: saved when user submits, waiting for belief score
+  const [pendingInput, setPendingInput] = useState<ContentInputType | null>(null);
+
+  // CTA: user must click to start Socrates conversation
+  const [showChat, setShowChat] = useState(false);
+
   const isIdle = analysisStatus === 'idle';
   const isAnalyzing = analysisStatus === 'analyzing';
   const isDone = analysisStatus === 'done';
-  const hasPanelData = panels.source || panels.perspective || panels.bias;
 
+  // Step 1: User submits content → show belief score (don't start analysis yet)
   const handleSubmit = useCallback(
     (input: ContentInputType) => {
-      startAnalysis({ type: input.type, content: input.value });
+      setPendingInput(input);
     },
-    [startAnalysis]
+    []
+  );
+
+  // Step 2: Belief score submitted → now start analysis
+  const handleBeliefScoreBefore = useCallback(
+    (score: number) => {
+      useChatStore.getState().setBeliefScoreBefore(score);
+      if (pendingInput) {
+        startAnalysis({ type: pendingInput.type, content: pendingInput.value });
+        setPendingInput(null);
+      }
+    },
+    [pendingInput, startAnalysis]
   );
 
   const handleSendMessage = useCallback(
@@ -75,17 +95,23 @@ function DashboardInner() {
 
   const handleBeliefScore = useCallback(
     (score: number, scorePhase: 'before' | 'after') => {
-      // Score is already saved in store by SocratesChat component
-      // This callback can be used for analytics or additional logic
       console.log(`Belief score ${scorePhase}:`, score);
     },
     []
   );
 
-  // Send first Socrates question after belief score is entered
+  const handleEndConversation = useCallback(() => {
+    useChatStore.getState().addMessage({
+      role: 'assistant',
+      content: '대화를 종료했어요. 오른쪽 분석 카드에서 결과를 바로 확인해보세요.',
+      timestamp: new Date(),
+    });
+    setChatComplete();
+  }, [setChatComplete]);
+
+  // Send first Socrates question when chat is opened and belief score exists
   useEffect(() => {
-    // Only send first question after belief_before score is entered
-    if (isDone && chatMessages.length === 0 && beliefScoreBefore !== null && phase === 'questions') {
+    if (showChat && isDone && chatMessages.length === 0 && beliefScoreBefore !== null && phase === 'questions') {
       const firstQuestion = DEMO_SOCRATES_QUESTIONS[0];
       useChatStore.getState().addMessage({
         role: 'assistant',
@@ -93,7 +119,7 @@ function DashboardInner() {
         timestamp: new Date(),
       });
     }
-  }, [isDone, chatMessages.length, beliefScoreBefore, phase]);
+  }, [showChat, isDone, chatMessages.length, beliefScoreBefore, phase]);
 
   // Compute mind shift for display
   const mindShift =
@@ -111,6 +137,20 @@ function DashboardInner() {
         }
       : null;
 
+  const reset = useCallback(() => {
+    sessionReset();
+    setPendingInput(null);
+    setShowChat(false);
+    setActiveTab(0);
+  }, [sessionReset]);
+
+  // Mobile: which tabs are disabled (no data yet)
+  const disabledTabs = [
+    !panels.source,
+    !panels.bias,
+    !panels.perspective,
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--bg-primary)]">
       {/* Header */}
@@ -119,9 +159,9 @@ function DashboardInner() {
       {/* Main content */}
       <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
-          {/* Content Input - shown when idle */}
+          {/* Content Input - shown when idle and no pending belief score */}
           <AnimatePresence mode="wait">
-            {isIdle && (
+            {isIdle && !pendingInput && (
               <motion.div
                 key="input"
                 initial={{ opacity: 0, y: 20 }}
@@ -151,6 +191,35 @@ function DashboardInner() {
             )}
           </AnimatePresence>
 
+          {/* Belief Score BEFORE analysis */}
+          <AnimatePresence mode="wait">
+            {pendingInput && isIdle && (
+              <motion.div
+                key="belief-before"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col items-center gap-6 pt-8 pb-8"
+              >
+                <div className="text-center space-y-2 max-w-md">
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                    분석을 시작하기 전에
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    나중에 생각이 어떻게 변했는지 비교해볼게요
+                  </p>
+                </div>
+                <div className="w-full max-w-md">
+                  <BeliefScoreSlider
+                    phase="before"
+                    onSubmit={handleBeliefScoreBefore}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Agent Status Bar - shown when analyzing or done */}
           <AnimatePresence>
             {(isAnalyzing || isDone) && (
@@ -166,119 +235,204 @@ function DashboardInner() {
             )}
           </AnimatePresence>
 
-          {/* Panel Container - shown when panel data exists */}
+          {/* === Sequential Panel Reveal === */}
+
+          {/* Mobile: Tab navigation - shown when any panel has data */}
           <AnimatePresence>
-            {hasPanelData && (
+            {(panels.source || panels.bias || panels.perspective) && (
               <motion.div
-                key="panels"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                key="mobile-tabs"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+                className="lg:hidden"
               >
-                {/* Mobile: Tab navigation */}
-                <div className="mb-4 lg:hidden">
-                  <TabNav
-                    tabs={PANEL_TABS}
-                    activeTab={activeTab}
-                    onChange={setActiveTab}
-                  />
-                </div>
-
-                {/* Desktop: Vertical stack layout (Source → Bias → Perspective) */}
-                <div className="hidden lg:flex lg:flex-col lg:gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0 }}
-                  >
-                    <SourcePanel
-                      data={panels.source}
-                      isLoading={isAnalyzing && !panels.source}
-                    />
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.15 }}
-                  >
-                    <BiasPanel
-                      data={panels.bias}
-                      isLoading={isAnalyzing && !panels.bias}
-                    />
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                  >
-                    <PerspectivePanel
-                      data={panels.perspective}
-                      isLoading={isAnalyzing && !panels.perspective}
-                    />
-                  </motion.div>
-                </div>
-
-                {/* Mobile: single tab panel (Source → Bias → Perspective) */}
-                <div className="lg:hidden">
-                  <AnimatePresence mode="wait">
-                    {activeTab === 0 && (
-                      <motion.div
-                        key="source-tab"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <SourcePanel
-                          data={panels.source}
-                          isLoading={isAnalyzing && !panels.source}
-                        />
-                      </motion.div>
-                    )}
-                    {activeTab === 1 && (
-                      <motion.div
-                        key="bias-tab"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <BiasPanel
-                          data={panels.bias}
-                          isLoading={isAnalyzing && !panels.bias}
-                        />
-                      </motion.div>
-                    )}
-                    {activeTab === 2 && (
-                      <motion.div
-                        key="perspective-tab"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <PerspectivePanel
-                          data={panels.perspective}
-                          isLoading={isAnalyzing && !panels.perspective}
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <TabNav
+                  tabs={PANEL_TABS}
+                  activeTab={activeTab}
+                  onChange={setActiveTab}
+                  disabledTabs={disabledTabs}
+                />
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Socrates Chat + Analysis Card - shown when analysis is done */}
+          {/* Desktop: Sequential vertical stack - each panel appears when data arrives */}
+          <div className="hidden lg:flex lg:flex-col lg:gap-4">
+            <AnimatePresence>
+              {panels.source && (
+                <motion.div
+                  key="panel-source"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <SourcePanel data={panels.source} isLoading={false} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {panels.bias && (
+                <motion.div
+                  key="panel-bias"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <BiasPanel data={panels.bias} isLoading={false} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {panels.perspective && (
+                <motion.div
+                  key="panel-perspective"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <PerspectivePanel data={panels.perspective} isLoading={false} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Loading indicator for next panel */}
+            <AnimatePresence>
+              {isAnalyzing && (!panels.source || !panels.bias || !panels.perspective) && (
+                <motion.div
+                  key="panel-loading"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center justify-center py-8"
+                >
+                  <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                      className="h-4 w-4 rounded-full border-2 border-white/10 border-t-[var(--indigo-500)]"
+                    />
+                    <span className="text-xs">
+                      {!panels.source
+                        ? '소스를 검증하고 있어요...'
+                        : !panels.bias
+                          ? '편향을 분석하고 있어요...'
+                          : '다른 관점을 탐색하고 있어요...'}
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Mobile: single tab panel */}
+          <div className="lg:hidden">
+            <AnimatePresence mode="wait">
+              {activeTab === 0 && panels.source && (
+                <motion.div
+                  key="source-tab"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <SourcePanel data={panels.source} isLoading={false} />
+                </motion.div>
+              )}
+              {activeTab === 1 && panels.bias && (
+                <motion.div
+                  key="bias-tab"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <BiasPanel data={panels.bias} isLoading={false} />
+                </motion.div>
+              )}
+              {activeTab === 2 && panels.perspective && (
+                <motion.div
+                  key="perspective-tab"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <PerspectivePanel data={panels.perspective} isLoading={false} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Mobile loading indicator */}
+            {isAnalyzing && !panels.source && (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-3 text-[var(--text-muted)]">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                    className="h-4 w-4 rounded-full border-2 border-white/10 border-t-[var(--indigo-500)]"
+                  />
+                  <span className="text-xs">에이전트가 분석 중이에요...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* === CTA: Transition to Socrates Chat === */}
           <AnimatePresence>
-            {isDone && (
+            {isDone && !showChat && (
+              <motion.div
+                key="chat-cta"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="flex justify-center py-6"
+              >
+                <motion.button
+                  onClick={() => setShowChat(true)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="group relative overflow-hidden rounded-2xl px-8 py-4 text-sm font-semibold text-white transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--indigo-500), var(--cyan-400))',
+                  }}
+                >
+                  <span className="relative z-10 flex items-center gap-3">
+                    <span className="text-base">{'\uD83D\uDCAC'}</span>
+                    <span>
+                      분석 결과를 확인했으면, 이제 이야기해볼까요?
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-1">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </span>
+                  {/* Shimmer effect */}
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: 'linear', repeatDelay: 1 }}
+                  />
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Socrates Chat + Analysis Card - shown after CTA click */}
+          <AnimatePresence>
+            {isDone && showChat && (
               <motion.div
                 key="chat-section"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.5 }}
                 className="grid grid-cols-1 gap-4 lg:grid-cols-2"
               >
                 {/* Socrates Chat */}
@@ -286,6 +440,7 @@ function DashboardInner() {
                   onSend={handleSendMessage}
                   onConfirmation={handleConfirmation}
                   onBeliefScore={handleBeliefScore}
+                  onEndConversation={handleEndConversation}
                 />
 
                 {/* Analysis Card + Mind Shift - shown when chat is complete */}

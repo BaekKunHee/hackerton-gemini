@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     gemini_model_flash: str = "gemini-3-flash-preview"
 
     # Image generation model (for perspective visualization)
-    gemini_model_image: str = "gemini-2.5-flash-image-preview"
+    gemini_model_image: str = "gemini-3.1-flash-image-preview"
 
     model_config = SettingsConfigDict(
         env_file=".env",

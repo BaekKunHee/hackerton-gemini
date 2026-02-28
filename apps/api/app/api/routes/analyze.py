@@ -99,9 +99,15 @@ def build_bias_panel(
         "textExamples": text_examples,
     }
 
-    # Add alternative framing if available
+    # Add alternative framing (always include with default if not provided)
     if alternative_framing:
         result["alternativeFraming"] = alternative_framing
+    else:
+        # Default framing based on detected biases
+        if dominant_biases:
+            result["alternativeFraming"] = "이 콘텐츠는 특정 관점에서 작성되었습니다. 동일한 사실을 다른 프레임으로 바라보면, 더 균형 잡힌 이해가 가능합니다. 위에서 감지된 편향 패턴을 인식하면서 다양한 관점의 정보를 함께 살펴보세요."
+        elif text_examples:
+            result["alternativeFraming"] = "제시된 텍스트 예시들을 다른 맥락에서 해석해보세요. 같은 사실도 어떤 프레임으로 보느냐에 따라 전혀 다른 결론에 도달할 수 있습니다."
 
     # Add expanded topics if available
     if expanded_topics:

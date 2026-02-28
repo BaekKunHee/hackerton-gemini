@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import type { PerspectivePanelData, Perspective } from '@/lib/types';
-import GlassPanel from '@/app/components/shared/GlassPanel';
-import Skeleton from '@/app/components/shared/Skeleton';
+import { motion } from "framer-motion";
+import Image from "next/image";
+import type { PerspectivePanelData, Perspective } from "@/lib/types";
+import GlassPanel from "@/app/components/shared/GlassPanel";
+import Skeleton from "@/app/components/shared/Skeleton";
 
 interface PerspectivePanelProps {
   data: PerspectivePanelData | null;
@@ -20,7 +20,7 @@ function SpectrumDot({ perspective }: { perspective: Perspective }) {
       initial={{ opacity: 0, scale: 0 }}
       animate={{ opacity: 1, scale: 1 }}
       className="absolute -translate-x-1/2 -translate-y-1/2"
-      style={{ left: `${x}%`, top: '50%' }}
+      style={{ left: `${x}%`, top: "50%" }}
       title={`${perspective.source.publisher}: ${perspective.frame}`}
     >
       <div className="relative group">
@@ -86,30 +86,6 @@ export default function PerspectivePanel({
           )}
         </div>
       )}
-
-      <div className="mb-5 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-        <p className="text-[11px] text-[var(--text-muted)] mb-3">
-          관점 스펙트럼
-        </p>
-        <div className="relative h-8">
-          {/* Axis */}
-          <div className="absolute top-1/2 left-0 right-0 h-px bg-white/[0.08]" />
-          {/* Labels */}
-          <span className="absolute left-0 -bottom-4 text-[10px] text-[var(--text-muted)]">
-            진보
-          </span>
-          <span className="absolute left-1/2 -translate-x-1/2 -bottom-4 text-[10px] text-[var(--text-muted)]">
-            중립
-          </span>
-          <span className="absolute right-0 -bottom-4 text-[10px] text-[var(--text-muted)]">
-            보수
-          </span>
-          {/* Dots */}
-          {data.perspectives.map((p) => (
-            <SpectrumDot key={p.id} perspective={p} />
-          ))}
-        </div>
-      </div>
 
       {/* Perspective cards */}
       <div className="space-y-3 mb-5 mt-8">
@@ -181,10 +157,7 @@ export default function PerspectivePanel({
           관점 차이
         </p>
         {data.divergencePoints.map((point, index) => (
-          <div
-            key={index}
-            className="mb-3 rounded-lg bg-white/[0.02] p-3"
-          >
+          <div key={index} className="mb-3 rounded-lg bg-white/[0.02] p-3">
             <p className="text-xs font-medium text-[var(--text-primary)] mb-2">
               {point.topic}
             </p>

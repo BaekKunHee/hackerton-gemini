@@ -45,7 +45,7 @@ interface ChatStoreState {
 export const useChatStore = create<ChatStoreState>((set) => ({
   messages: [],
   step: 1,
-  phase: 'belief_before',
+  phase: 'questions',
   isLoading: false,
   isComplete: false,
   awaitingConfirmation: false,
@@ -53,7 +53,7 @@ export const useChatStore = create<ChatStoreState>((set) => ({
   isSearching: false,
   beliefScoreBefore: null,
   beliefScoreAfter: null,
-  awaitingBeliefScore: 'before',
+  awaitingBeliefScore: null,
 
   addMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
@@ -64,7 +64,15 @@ export const useChatStore = create<ChatStoreState>((set) => ({
 
   setLoading: (isLoading) => set({ isLoading }),
 
-  setComplete: () => set({ isComplete: true, phase: 'complete' }),
+  setComplete: () =>
+    set({
+      isComplete: true,
+      phase: 'complete',
+      isLoading: false,
+      awaitingConfirmation: false,
+      isSearching: false,
+      awaitingBeliefScore: null,
+    }),
 
   setAwaitingConfirmation: (awaitingConfirmation) =>
     set({ awaitingConfirmation, phase: awaitingConfirmation ? 'confirmation' : 'followup' }),
@@ -86,7 +94,7 @@ export const useChatStore = create<ChatStoreState>((set) => ({
     set({
       messages: [],
       step: 1,
-      phase: 'belief_before',
+      phase: 'questions',
       isLoading: false,
       isComplete: false,
       awaitingConfirmation: false,
@@ -94,6 +102,6 @@ export const useChatStore = create<ChatStoreState>((set) => ({
       isSearching: false,
       beliefScoreBefore: null,
       beliefScoreAfter: null,
-      awaitingBeliefScore: 'before',
+      awaitingBeliefScore: null,
     }),
 }));

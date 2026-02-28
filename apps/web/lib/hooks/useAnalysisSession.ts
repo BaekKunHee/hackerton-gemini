@@ -150,6 +150,10 @@ export function useAnalysisSession(): UseAnalysisSessionReturn {
           setSearching(true);
           // Simulate search delay
           setTimeout(async () => {
+            if (useChatStore.getState().isComplete) {
+              setSearching(false);
+              return;
+            }
             setSearching(false);
             // Send another message to get search results
             const followUpResponse = await sendChatMessage(

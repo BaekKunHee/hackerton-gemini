@@ -12,12 +12,17 @@ interface SocratesChatProps {
   onSend: (message: string) => void;
   onConfirmation?: (agreed: boolean) => void;
   onBeliefScore?: (score: number, phase: 'before' | 'after') => void;
+  onEndConversation?: () => void;
 }
 
-export default function SocratesChat({ onSend, onConfirmation, onBeliefScore }: SocratesChatProps) {
+export default function SocratesChat({
+  onSend,
+  onConfirmation,
+  onBeliefScore,
+  onEndConversation,
+}: SocratesChatProps) {
   const {
     messages,
-    phase,
     isLoading,
     isComplete,
     awaitingConfirmation,
@@ -26,7 +31,6 @@ export default function SocratesChat({ onSend, onConfirmation, onBeliefScore }: 
     awaitingBeliefScore,
     setBeliefScoreBefore,
     setBeliefScoreAfter,
-    setPhase,
   } = useChatStore();
 
   const handleBeliefScore = (score: number) => {
@@ -73,6 +77,15 @@ export default function SocratesChat({ onSend, onConfirmation, onBeliefScore }: 
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           생각 나누기
         </h3>
+        {!isComplete && (
+          <button
+            type="button"
+            onClick={onEndConversation}
+            className="ml-auto rounded-lg border border-white/15 px-2.5 py-1 text-[10px] text-[var(--text-secondary)] transition-colors hover:border-white/25 hover:text-[var(--text-primary)]"
+          >
+            대화 종료
+          </button>
+        )}
         {isComplete && (
           <span className="ml-auto text-[10px] text-[var(--green-400)] bg-[var(--green-400)]/10 rounded-full px-2.5 py-0.5">
             대화 완료
@@ -87,20 +100,6 @@ export default function SocratesChat({ onSend, onConfirmation, onBeliefScore }: 
           </span>
         )}
       </div>
-
-      {/* Belief Score Input - Before */}
-      {awaitingBeliefScore === 'before' && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4"
-        >
-          <BeliefScoreSlider
-            phase="before"
-            onSubmit={handleBeliefScore}
-          />
-        </motion.div>
-      )}
 
       {/* Belief Score Input - After */}
       {awaitingBeliefScore === 'after' && (
@@ -119,7 +118,7 @@ export default function SocratesChat({ onSend, onConfirmation, onBeliefScore }: 
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1 min-h-0">
-        {messages.length === 0 && !awaitingBeliefScore && (
+        {messages.length === 0 && awaitingBeliefScore !== 'after' && (
           <div className="flex items-center justify-center h-full">
             <p className="text-xs text-[var(--text-muted)] text-center">
               분석이 완료되면 대화가 시작됩니다
