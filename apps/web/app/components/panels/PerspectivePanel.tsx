@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import type { PerspectivePanelData, Perspective } from '@/lib/types';
 import GlassPanel from '@/app/components/shared/GlassPanel';
 import Skeleton from '@/app/components/shared/Skeleton';
@@ -66,6 +67,26 @@ export default function PerspectivePanel({
       </div>
 
       {/* Spectrum map */}
+      {data.spectrumVisualization?.imageDataUrl && (
+        <div className="mb-5 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+          <p className="text-[11px] text-[var(--text-muted)] mb-3">
+            AI 관점 차트
+          </p>
+          <Image
+            src={data.spectrumVisualization.imageDataUrl}
+            alt="관점 스펙트럼 시각화"
+            width={1200}
+            height={800}
+            className="w-full rounded-lg border border-white/[0.08]"
+          />
+          {data.spectrumVisualization.caption && (
+            <p className="mt-2 text-[11px] text-[var(--text-muted)] leading-relaxed">
+              {data.spectrumVisualization.caption}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="mb-5 rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
         <p className="text-[11px] text-[var(--text-muted)] mb-3">
           관점 스펙트럼

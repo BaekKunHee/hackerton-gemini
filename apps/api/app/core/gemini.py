@@ -1,5 +1,8 @@
 """Gemini API client factory and utilities."""
 
+import base64
+import json
+
 from google import genai
 from google.genai import types
 
@@ -107,3 +110,64 @@ def extract_search_sources(response: types.GenerateContentResponse) -> list[dict
                 })
 
     return sources
+
+
+async def generate_perspective_spectrum_image(
+    topic: str,
+    perspectives: list[dict],
+    *,
+    model: str | None = None,
+) -> dict | None:
+    """Generate a linear-spectrum infographic image for perspective positions.
+
+    Returns:
+        A dictionary with image metadata and base64 payload, or None on failure.
+        Example: {"mime_type": "image/png", "base64_data": "...", "caption": "..."}
+    """
+    if not perspectives:
+        return None
+
+    client = get_gemini_client()
+    compact_points = [
+        {
+            "publisher": p.get("source", {}).get("publisher", ""),
+            "frame": p.get("frame", ""),
+            "political": p.get("spectrum", {}).get("political", 0),
+        }
+        for p in perspectives[:8]
+    ]
+
+    prompt = (
+        "Create a clean Korean infographic that visualizes opinion positions.\n"
+        "Select the most suitable chart style automatically from: linear spectrum, 2D scatter map, or bubble chart.\n"
+        "Use political value (-1 to 1) as the main placement signal.\n"
+        "Style: modern editorial chart, white background, high contrast, no photorealism.\n"
+        "Must keep labels readable in Korean, include a clear title, and include a compact legend.\n"
+        "If linear spectrum is selected, use axis labels: 진보 (left), 중립 (center), 보수 (right).\n"
+        f"Topic: {topic or '관점 스펙트럼'}\n"
+        f"Data: {json.dumps(compact_points, ensure_ascii=False)}"
+    )
+
+    response = await client.aio.models.generate_content(
+        model=model or settings.gemini_model_image,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_modalities=["TEXT", "IMAGE"],
+        ),
+    )
+
+    caption = response.text or ""
+    if not response.candidates:
+        return None
+
+    for part in response.candidates[0].content.parts or []:
+        inline_data = getattr(part, "inline_data", None)
+        if inline_data and getattr(inline_data, "data", None):
+            encoded = base64.b64encode(inline_data.data).decode("ascii")
+            return {
+                "mime_type": inline_data.mime_type or "image/png",
+                "base64_data": encoded,
+                "caption": caption,
+            }
+
+    return None

@@ -168,50 +168,7 @@ export default function BiasPanel({ data, isLoading }: BiasPanelProps) {
             </div>
           )}
         </>
-      ) : (
-        /* Legacy fallback: use biasScores */
-        data.biasScores && data.biasScores.length > 0 && (
-          <div className="mb-5">
-            <p className="text-[11px] text-[var(--text-muted)] mb-3 uppercase tracking-wider">
-              주요 편향 패턴
-            </p>
-            <div className="space-y-3">
-              {[...data.biasScores]
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 5)
-                .map((bias, index) => (
-                  <motion.div
-                    key={bias.type}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium text-[var(--text-primary)]">
-                        {legacyBiasLabels[bias.type]}
-                      </span>
-                      <span
-                        className="text-xs font-mono"
-                        style={{ color: getBarColor(bias.score * 100) }}
-                      >
-                        {Math.round(bias.score * 100)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
-                      <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: getBarColor(bias.score * 100) }}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${bias.score * 100}%` }}
-                        transition={{ duration: 0.8, delay: index * 0.1 }}
-                      />
-                    </div>
-                  </motion.div>
-                ))}
-            </div>
-          </div>
-        )
-      )}
+      ) : null}
 
       {/* Text examples */}
       {data.textExamples && data.textExamples.length > 0 && (

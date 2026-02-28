@@ -49,6 +49,11 @@ export interface PerspectivePanelData {
   perspectives: Perspective[];
   commonFacts: string[];
   divergencePoints: DivergencePoint[];
+  spectrumVisualization?: {
+    imageDataUrl: string;
+    caption?: string;
+    chartType?: 'linear' | 'scatter' | 'bubble' | 'auto';
+  };
 }
 
 export interface Perspective {

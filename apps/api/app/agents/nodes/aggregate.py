@@ -26,6 +26,7 @@ async def aggregate_results_node(state: dict) -> dict:
     steel_man = None
     expanded_topics = []
     related_content = []
+    alternative_framing = ""
 
     # Generate Steel Man and Expanded Topics in parallel
     if claims or detected_biases or perspectives:
@@ -91,9 +92,10 @@ async def aggregate_results_node(state: dict) -> dict:
                 print(f"[AGGREGATE] Expanded Topics response: {expanded_response.text[:100]}...", flush=True)
                 expanded_result = extract_json(expanded_response.text)
                 if expanded_result:
+                    alternative_framing = expanded_result.get("alternativeFraming", "")
                     expanded_topics = expanded_result.get("expandedTopics", [])
                     related_content = expanded_result.get("relatedContent", [])
-                    print(f"[AGGREGATE] Expanded: {len(expanded_topics)} topics, {len(related_content)} content", flush=True)
+                    print(f"[AGGREGATE] Expanded: {len(expanded_topics)} topics, {len(related_content)} content, framing={bool(alternative_framing)}", flush=True)
             else:
                 print(f"[AGGREGATE] Expanded Topics ERROR: {expanded_response}", flush=True)
 
@@ -108,6 +110,7 @@ async def aggregate_results_node(state: dict) -> dict:
 
     return {
         "steel_man": steel_man,
+        "alternative_framing": alternative_framing,
         "expanded_topics": expanded_topics,
         "related_content": related_content,
         "agent_statuses": [

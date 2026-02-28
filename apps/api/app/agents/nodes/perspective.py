@@ -5,6 +5,7 @@ import logging
 from google import genai
 from google.genai import types
 from app.core.config import settings
+from app.core.gemini import generate_perspective_spectrum_image
 from app.agents.prompts import PERSPECTIVE_EXPLORER_PROMPT
 from app.agents.utils import extract_json
 
@@ -84,11 +85,23 @@ async def perspective_explorer_node(state: dict) -> dict:
                 "summary": "",
             }
 
+        perspectives = result.get("perspectives", [])
+        perspective_image = None
+        if perspectives:
+            try:
+                perspective_image = await generate_perspective_spectrum_image(
+                    topic=topic,
+                    perspectives=perspectives,
+                )
+            except Exception:
+                logger.exception("[PerspectiveExplorer] Image generation failed")
+
         return {
-            "perspectives": result.get("perspectives", []),
+            "perspectives": perspectives,
             "common_facts": result.get("common_facts", []),
             "divergence_points": result.get("divergence_points", []),
             "perspective_summary": result.get("summary", ""),
+            "perspective_image": perspective_image,
             "agent_statuses": [
                 {
                     "agent_id": "perspective",
@@ -111,6 +124,7 @@ async def perspective_explorer_node(state: dict) -> dict:
             "common_facts": [],
             "divergence_points": [],
             "perspective_summary": "",
+            "perspective_image": None,
             "agent_statuses": [
                 {
                     "agent_id": "perspective",

@@ -128,6 +128,7 @@ class FlipsideState(TypedDict):
     common_facts: list[str]
     divergence_points: list[DivergencePoint]
     perspective_summary: str
+    perspective_image: Optional[dict]
 
     # Agent D (Socrates) Output
     socrates_ready: bool
@@ -172,6 +173,7 @@ def get_initial_state(
         common_facts=[],
         divergence_points=[],
         perspective_summary="",
+        perspective_image=None,
 
         # Agent D outputs
         socrates_ready=False,

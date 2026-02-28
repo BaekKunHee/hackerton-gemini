@@ -42,20 +42,36 @@ def build_source_panel(verified_sources: list, trust_score: int, summary: str) -
     }
 
 
-def build_perspective_panel(perspectives: list, common_facts: list, divergence_points: list) -> dict:
+def build_perspective_panel(
+    perspectives: list,
+    common_facts: list,
+    divergence_points: list,
+    perspective_image: dict | None = None,
+) -> dict:
     """Build PerspectivePanelData matching frontend type."""
-    return {
+    panel = {
         "perspectives": convert_keys(perspectives),
         "commonFacts": common_facts,
         "divergencePoints": convert_keys(divergence_points),
     }
+    if perspective_image:
+        panel["spectrumVisualization"] = {
+            "imageDataUrl": (
+                f"data:{perspective_image.get('mime_type', 'image/png')};base64,"
+                f"{perspective_image.get('base64_data', '')}"
+            ),
+            "caption": perspective_image.get("caption", ""),
+            "chartType": "auto",
+        }
+    return panel
 
 
 def build_bias_panel(
     detected_biases: list,
     claims: list,
     expanded_topics: list = None,
-    related_content: list = None
+    related_content: list = None,
+    alternative_framing: str = None
 ) -> dict:
     """Build BiasPanelData matching frontend type."""
     bias_scores = []
@@ -82,6 +98,10 @@ def build_bias_panel(
         "dominantBiases": dominant_biases,
         "textExamples": text_examples,
     }
+
+    # Add alternative framing if available
+    if alternative_framing:
+        result["alternativeFraming"] = alternative_framing
 
     # Add expanded topics if available
     if expanded_topics:
@@ -140,7 +160,9 @@ async def stream_analysis(session_id: str, request: Request):
             "common_facts": [],
             "divergence_points": [],
             "perspective_summary": "",
+            "perspective_image": None,
             "steel_man": None,
+            "alternative_framing": "",
             "expanded_topics": [],
             "related_content": [],
         }
@@ -183,12 +205,16 @@ async def stream_analysis(session_id: str, request: Request):
                         result_payload["source_summary"] = node_output["source_summary"]
                     if "perspective_summary" in node_output:
                         result_payload["perspective_summary"] = node_output["perspective_summary"]
+                    if "perspective_image" in node_output:
+                        result_payload["perspective_image"] = node_output["perspective_image"]
                     if "steel_man" in node_output and node_output["steel_man"]:
                         result_payload["steel_man"] = node_output["steel_man"]
                     if "expanded_topics" in node_output:
                         result_payload["expanded_topics"] = node_output["expanded_topics"]
                     if "related_content" in node_output:
                         result_payload["related_content"] = node_output["related_content"]
+                    if "alternative_framing" in node_output:
+                        result_payload["alternative_framing"] = node_output["alternative_framing"]
 
                     # Merge conversation context from parallel nodes for /api/chat.
                     if "conversation_context" in node_output:
@@ -236,7 +262,22 @@ async def stream_analysis(session_id: str, request: Request):
                             "payload": build_perspective_panel(
                                 node_output["perspectives"],
                                 node_output.get("common_facts", []),
-                                node_output.get("divergence_points", [])
+                                node_output.get("divergence_points", []),
+                                node_output.get("perspective_image"),
+                            )
+                        }
+                        if stream_open:
+                            yield f"data: {json.dumps(sse_data)}\n\n"
+
+                    if "perspective_image" in node_output and node_output["perspective_image"]:
+                        sse_data = {
+                            "type": "panel_update",
+                            "panel": "perspective",
+                            "payload": build_perspective_panel(
+                                result_payload.get("perspectives", []),
+                                result_payload.get("common_facts", []),
+                                result_payload.get("divergence_points", []),
+                                result_payload.get("perspective_image"),
                             )
                         }
                         if stream_open:
@@ -254,11 +295,12 @@ async def stream_analysis(session_id: str, request: Request):
                         if stream_open:
                             yield f"data: {json.dumps(sse_data)}\n\n"
 
-                    # Send expanded topics and related content as bias panel update
-                    if "expanded_topics" in node_output or "related_content" in node_output:
+                    # Send expanded topics, related content, and alternative framing as bias panel update
+                    if "expanded_topics" in node_output or "related_content" in node_output or "alternative_framing" in node_output:
                         expanded = node_output.get("expanded_topics", [])
                         related = node_output.get("related_content", [])
-                        if expanded or related:
+                        framing = node_output.get("alternative_framing", "")
+                        if expanded or related or framing:
                             sse_data = {
                                 "type": "panel_update",
                                 "panel": "bias",
@@ -266,7 +308,8 @@ async def stream_analysis(session_id: str, request: Request):
                                     result_payload.get("detected_biases", []),
                                     result_payload.get("claims", []),
                                     expanded,
-                                    related
+                                    related,
+                                    framing
                                 )
                             }
                             if stream_open:
@@ -299,13 +342,15 @@ async def stream_analysis(session_id: str, request: Request):
                     "perspective": build_perspective_panel(
                         result_payload.get("perspectives", []),
                         result_payload.get("common_facts", []),
-                        result_payload.get("divergence_points", [])
+                        result_payload.get("divergence_points", []),
+                        result_payload.get("perspective_image"),
                     ),
                     "bias": build_bias_panel(
                         result_payload.get("detected_biases", []),
                         result_payload.get("claims", []),
                         result_payload.get("expanded_topics", []),
-                        result_payload.get("related_content", [])
+                        result_payload.get("related_content", []),
+                        result_payload.get("alternative_framing", "")
                     ),
                     "steelMan": convert_keys(result_payload.get("steel_man", {})) or {
                         "opposingArgument": "",

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Flash model (for fast search-based tasks - Agent B, C)
     gemini_model_flash: str = "gemini-3-flash-preview"
 
+    # Image generation model (for perspective visualization)
+    gemini_model_image: str = "gemini-2.5-flash-image-preview"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
