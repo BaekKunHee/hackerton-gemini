@@ -154,7 +154,75 @@ export const demoPerspectiveData: PerspectivePanelData = {
 };
 
 export const demoBiasData: BiasPanelData = {
-  // 새로운 분리된 구조 (데모 시나리오 기준)
+  // 새로운 Agent A 응답 구조 (user_instincts + information_biases)
+  userInstincts: [
+    {
+      instinctType: '비난 본능',
+      confidence: 0.71,
+      reasoning: '복잡한 사회 현상을 "정부의 무능"이라는 단일 원인에 귀속시키고 있습니다. 인구구조, 글로벌 경제, 기술 변화 등 다른 요인은 무시됩니다.',
+      example: '"이 모든 것은 정부의 무능한 정책 때문이다"',
+      label: '비난 본능',
+    },
+    {
+      instinctType: '단일 관점 본능',
+      confidence: 0.58,
+      reasoning: '문제를 오직 "정책 실패" 프레임으로만 바라보고 있습니다. 시장, 인구, 글로벌 요인 등 다른 관점은 배제되었습니다.',
+      example: '정부 정책만을 유일한 원인으로 지목',
+      label: '단일관점 본능',
+    },
+    {
+      instinctType: '부정 본능',
+      confidence: 0.52,
+      reasoning: '개선된 지표(예: 전체 고용률 증가)는 언급하지 않고, 부정적인 측면만 강조하고 있습니다.',
+      example: '긍정적 지표 누락, 부정적 수치만 강조',
+      label: '부정 본능',
+    },
+    {
+      instinctType: '간극 본능',
+      confidence: 0.48,
+      reasoning: '"청년 vs 기성세대", "정부 vs 국민"처럼 이분법적 구도로 복잡한 현실을 단순화하고 있습니다.',
+      example: '"청년 vs 기성세대" 구도 설정',
+      label: '간극 본능',
+    },
+    {
+      instinctType: '일반화 본능',
+      confidence: 0.35,
+      reasoning: '특정 지역이나 직군의 사례를 전체 청년 세대로 일반화하는 경향이 있습니다.',
+      example: '특정 사례를 "모든 청년"으로 확대',
+      label: '일반화 본능',
+    },
+  ],
+  informationBiases: [
+    {
+      biasType: '확증 편향',
+      confidence: 0.82,
+      reasoning: '자신의 의견을 뒷받침하는 정보만 선택적으로 인용했습니다. 반대 의견이나 맥락을 제공하는 데이터는 생략되었습니다.',
+      example: '정부 비판 자료만 인용, 긍정적 평가는 배제',
+      label: '확증 편향',
+    },
+    {
+      biasType: '누락에 의한 편향',
+      confidence: 0.65,
+      reasoning: '반대 관점이나 필수 맥락이 의도적으로 배제되었습니다. OECD 평균 비교, 개선 추이 등 균형 잡힌 정보가 없습니다.',
+      example: '확장실업률 21.3%의 OECD 비교 데이터 누락',
+      label: '누락에 의한 편향',
+    },
+    {
+      biasType: '프레이밍',
+      confidence: 0.58,
+      reasoning: '특정 방향으로 해석되도록 정보를 틀에 가두고 있습니다. "실패", "위기" 등의 단어 선택이 부정적 프레임을 강화합니다.',
+      example: '"정책 실패" 프레임으로 모든 데이터 해석',
+      label: '프레이밍',
+    },
+    {
+      biasType: '소스 선택의 편향',
+      confidence: 0.45,
+      reasoning: '한쪽 입장만을 대변하는 출처만 사용했습니다. 정부 발표나 중립적 연구기관의 자료는 인용되지 않았습니다.',
+      example: '비판적 시각의 출처만 선별적으로 인용',
+      label: '소스 선택의 편향',
+    },
+  ],
+  // Legacy support (기존 호환성)
   biases: [
     {
       type: 'confirmation_bias',
