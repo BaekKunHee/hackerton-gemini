@@ -43,7 +43,7 @@ export default function PerspectivePanel({
     return (
       <GlassPanel className="h-full">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">2</span>
+          <span className="text-lg">3</span>
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             다른 관점 탐색
           </h3>
@@ -58,7 +58,7 @@ export default function PerspectivePanel({
       {/* Header */}
       <div className="flex items-center gap-2 mb-5">
         <span className="flex h-6 w-6 items-center justify-center rounded-md bg-cyan-400/10 text-xs font-bold text-cyan-400">
-          2
+          3
         </span>
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           다른 관점 탐색

@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import type { SourcePanelData } from '@/lib/types';
 import GlassPanel from '@/app/components/shared/GlassPanel';
 import Badge from '@/app/components/shared/Badge';
-import TrustScore from '@/app/components/shared/TrustScore';
 import Skeleton from '@/app/components/shared/Skeleton';
 
 interface SourcePanelProps {
@@ -30,16 +29,13 @@ export default function SourcePanel({ data, isLoading }: SourcePanelProps) {
   return (
     <GlassPanel animate className="h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-400/10 text-xs font-bold text-blue-400">
-            1
-          </span>
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-            Primary Source 검증
-          </h3>
-        </div>
-        <TrustScore score={data.trustScore} />
+      <div className="flex items-center gap-2 mb-5">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-400/10 text-xs font-bold text-blue-400">
+          1
+        </span>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+          Primary Source 검증
+        </h3>
       </div>
 
       {/* Sources list */}

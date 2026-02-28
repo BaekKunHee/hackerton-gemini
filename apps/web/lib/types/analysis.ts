@@ -73,6 +73,14 @@ export interface DivergencePoint {
   positions: Record<string, string>;
 }
 
+// 연관 콘텐츠
+export interface RelatedContent {
+  title: string;
+  url: string;
+  source: string;
+  type: 'article' | 'video' | 'research' | 'other';
+}
+
 // 편향 분석 패널 데이터
 export interface BiasPanelData {
   // 새로운 분리된 구조
@@ -80,6 +88,8 @@ export interface BiasPanelData {
   instincts: InstinctItem[]; // Main 본능 (Hans Rosling)
   textExamples: BiasExample[];
   alternativeFraming?: string;
+  expandedTopics?: ExpandedTopic[]; // 사고의 확장
+  relatedContent?: RelatedContent[]; // 연관 콘텐츠
 
   // Legacy support (기존 호환성)
   biasScores?: BiasScore[];

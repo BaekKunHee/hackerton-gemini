@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import type { BiasPanelData, BiasItem, InstinctItem, BiasType } from '@/lib/types';
+import type { BiasPanelData, BiasItem, InstinctItem, BiasType, ExpandedTopic, RelatedContent } from '@/lib/types';
 import GlassPanel from '@/app/components/shared/GlassPanel';
 import Skeleton from '@/app/components/shared/Skeleton';
 
@@ -93,7 +93,7 @@ export default function BiasPanel({ data, isLoading }: BiasPanelProps) {
     return (
       <GlassPanel className="h-full">
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">3</span>
+          <span className="text-lg">2</span>
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">
             편향 분석
           </h3>
@@ -112,7 +112,7 @@ export default function BiasPanel({ data, isLoading }: BiasPanelProps) {
       {/* Header */}
       <div className="flex items-center gap-2 mb-5">
         <span className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-400/10 text-xs font-bold text-purple-400">
-          3
+          2
         </span>
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">
           편향 분석
@@ -244,16 +244,98 @@ export default function BiasPanel({ data, isLoading }: BiasPanelProps) {
         </div>
       )}
 
-      {/* Alternative framing */}
+      {/* 대안적 프레이밍 */}
       {data.alternativeFraming && (
-        <div>
-          <p className="text-[11px] text-[var(--text-muted)] mb-2 uppercase tracking-wider">
-            대안적 프레이밍
-          </p>
-          <div className="rounded-lg bg-[var(--indigo-500)]/5 border border-[var(--indigo-500)]/20 p-3">
-            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">🔄</span>
+            <p className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+              대안적 프레이밍
+            </p>
+          </div>
+          <div className="rounded-xl bg-[var(--indigo-500)]/5 border border-[var(--indigo-500)]/20 p-4">
+            <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
               {data.alternativeFraming}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* 사고의 확장 */}
+      {data.expandedTopics && data.expandedTopics.length > 0 && (
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">💡</span>
+            <p className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+              사고의 확장
+            </p>
+          </div>
+          <div className="space-y-3">
+            {data.expandedTopics.map((topic, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {topic.topic}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    topic.relevance === 'high'
+                      ? 'bg-[var(--green-400)]/10 text-[var(--green-400)]'
+                      : topic.relevance === 'medium'
+                      ? 'bg-[var(--amber-400)]/10 text-[var(--amber-400)]'
+                      : 'bg-white/[0.06] text-[var(--text-muted)]'
+                  }`}>
+                    {topic.relevance === 'high' ? '높은 관련성' : topic.relevance === 'medium' ? '중간 관련성' : '낮은 관련성'}
+                  </span>
+                </div>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  {topic.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 연관 콘텐츠 */}
+      {data.relatedContent && data.relatedContent.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-base">📚</span>
+            <p className="text-xs font-semibold text-[var(--text-primary)] uppercase tracking-wider">
+              연관 콘텐츠
+            </p>
+          </div>
+          <div className="space-y-2">
+            {data.relatedContent.map((content, index) => (
+              <motion.a
+                key={index}
+                href={content.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.08 }}
+                className="block rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 hover:bg-white/[0.04] hover:border-white/[0.1] transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-lg shrink-0">{content.type === 'article' ? '📰' : content.type === 'video' ? '🎬' : content.type === 'research' ? '📊' : '📄'}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--cyan-400)] hover:underline truncate">
+                      {content.title}
+                    </p>
+                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                      {content.source}
+                    </p>
+                  </div>
+                </div>
+              </motion.a>
+            ))}
           </div>
         </div>
       )}

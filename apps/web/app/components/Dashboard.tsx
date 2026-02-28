@@ -23,7 +23,7 @@ import { useChatStore } from '@/lib/store/useChatStore';
 import { DEMO_SOCRATES_QUESTIONS } from '@/lib/demo/data';
 import type { ContentInput as ContentInputType } from '@/lib/types';
 
-const PANEL_TABS = ['소스 검증', '다른 관점', '편향 분석'];
+const PANEL_TABS = ['소스 검증', '편향 분석', '다른 관점'];
 
 function DashboardInner() {
   const {
@@ -185,23 +185,41 @@ function DashboardInner() {
                   />
                 </div>
 
-                {/* Desktop: 3 columns / Mobile: single panel */}
-                <div className="hidden lg:grid lg:grid-cols-3 lg:gap-4">
-                  <SourcePanel
-                    data={panels.source}
-                    isLoading={isAnalyzing && !panels.source}
-                  />
-                  <PerspectivePanel
-                    data={panels.perspective}
-                    isLoading={isAnalyzing && !panels.perspective}
-                  />
-                  <BiasPanel
-                    data={panels.bias}
-                    isLoading={isAnalyzing && !panels.bias}
-                  />
+                {/* Desktop: Vertical stack layout (Source → Bias → Perspective) */}
+                <div className="hidden lg:flex lg:flex-col lg:gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0 }}
+                  >
+                    <SourcePanel
+                      data={panels.source}
+                      isLoading={isAnalyzing && !panels.source}
+                    />
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.15 }}
+                  >
+                    <BiasPanel
+                      data={panels.bias}
+                      isLoading={isAnalyzing && !panels.bias}
+                    />
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                  >
+                    <PerspectivePanel
+                      data={panels.perspective}
+                      isLoading={isAnalyzing && !panels.perspective}
+                    />
+                  </motion.div>
                 </div>
 
-                {/* Mobile: single tab panel */}
+                {/* Mobile: single tab panel (Source → Bias → Perspective) */}
                 <div className="lg:hidden">
                   <AnimatePresence mode="wait">
                     {activeTab === 0 && (
@@ -220,20 +238,6 @@ function DashboardInner() {
                     )}
                     {activeTab === 1 && (
                       <motion.div
-                        key="perspective-tab"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 10 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <PerspectivePanel
-                          data={panels.perspective}
-                          isLoading={isAnalyzing && !panels.perspective}
-                        />
-                      </motion.div>
-                    )}
-                    {activeTab === 2 && (
-                      <motion.div
                         key="bias-tab"
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -243,6 +247,20 @@ function DashboardInner() {
                         <BiasPanel
                           data={panels.bias}
                           isLoading={isAnalyzing && !panels.bias}
+                        />
+                      </motion.div>
+                    )}
+                    {activeTab === 2 && (
+                      <motion.div
+                        key="perspective-tab"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <PerspectivePanel
+                          data={panels.perspective}
+                          isLoading={isAnalyzing && !panels.perspective}
                         />
                       </motion.div>
                     )}

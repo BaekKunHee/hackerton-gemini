@@ -278,6 +278,39 @@ STEEL_MAN_GENERATOR_PROMPT = """당신은 Flipside의 Steel Man 분석가입니�
 }}
 """
 
+# Expanded Topics & Related Content Generator
+EXPANDED_TOPICS_PROMPT = """당신은 Flipside의 사고 확장 에이전트입니다.
+분석 결과를 바탕으로 사용자가 더 탐구할 수 있는 관련 주제를 제안하세요.
+
+분석 결과:
+- 주요 주장: {claims}
+- 감지된 편향: {biases}
+- 다양한 관점: {perspectives}
+
+생성할 내용:
+1. 사고 확장 주제 3개: 현재 주제와 연결된 더 넓은 관점이나 고려할 만한 새로운 측면
+2. 연관 콘텐츠 검색: 이 주제에 대해 더 알 수 있는 신뢰할 만한 자료 5개
+
+출력 JSON (한국어):
+{{
+  "expandedTopics": [
+    {{
+      "topic": "확장 주제 이름 (예: 노동 관점, 환경 영향, 역사적 맥락)",
+      "description": "왜 이 관점을 고려해볼 만한지 설명 (2-3문장)",
+      "relevance": "high|medium|low"
+    }}
+  ],
+  "relatedContent": [
+    {{
+      "title": "콘텐츠 제목",
+      "url": "실제 URL",
+      "source": "출처 이름",
+      "type": "article|video|research|other"
+    }}
+  ]
+}}
+"""
+
 # Multimodal content parsing prompt (for images/screenshots)
 CONTENT_PARSER_PROMPT = """이 이미지/스크린샷을 분석하고 모든 텍스트와 시각적 정보를 추출하세요.
 

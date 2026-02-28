@@ -19,8 +19,9 @@ export type {
   BiasItem,
   InstinctType,
   InstinctItem,
-  // Expanded topics
+  // Expanded topics & related content
   ExpandedTopic,
+  RelatedContent,
   // Mind shift & refutation
   RefutationPoint,
   MindShiftScore,

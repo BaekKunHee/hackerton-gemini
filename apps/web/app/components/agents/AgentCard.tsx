@@ -13,6 +13,7 @@ interface AgentConfig {
   name: string;
   color: string;
   bgColor: string;
+  steps: string[];
 }
 
 const agentConfigs: Record<AgentId, AgentConfig> = {
@@ -21,24 +22,28 @@ const agentConfigs: Record<AgentId, AgentConfig> = {
     name: '분석기',
     color: 'text-purple-400',
     bgColor: 'bg-purple-400/10',
+    steps: ['콘텐츠 파싱', '주장 추출', '편향 감지', '지시 생성'],
   },
   source: {
     icon: '\uD83D\uDD0D',
     name: '소스 검증',
     color: 'text-blue-400',
     bgColor: 'bg-blue-400/10',
+    steps: ['원본 검색', '인용 비교', '왜곡 분석', '신뢰도 평가'],
   },
   perspective: {
     icon: '\uD83C\uDF10',
     name: '관점 탐색',
     color: 'text-cyan-400',
     bgColor: 'bg-cyan-400/10',
+    steps: ['다른 시각 검색', '프레임 분석', '스펙트럼 매핑'],
   },
   socrates: {
     icon: '\uD83D\uDCAC',
     name: '소크라테스',
     color: 'text-amber-400',
     bgColor: 'bg-amber-400/10',
+    steps: ['맥락 준비', '질문 생성'],
   },
 };
 
@@ -51,11 +56,18 @@ const statusLabels: Record<AgentState['status'], string> = {
   error: '오류',
 };
 
+function getActiveStep(progress: number | undefined, totalSteps: number): number {
+  if (!progress || progress === 0) return 0;
+  if (progress >= 100) return totalSteps;
+  return Math.ceil((progress / 100) * totalSteps);
+}
+
 export default function AgentCard({ agent }: AgentCardProps) {
   const config = agentConfigs[agent.id];
   const isActive = ['thinking', 'searching', 'analyzing'].includes(agent.status);
   const isDone = agent.status === 'done';
   const isError = agent.status === 'error';
+  const activeStep = getActiveStep(agent.progress, config.steps.length);
 
   return (
     <motion.div
@@ -112,6 +124,38 @@ export default function AgentCard({ agent }: AgentCardProps) {
           />
         )}
       </div>
+
+      {/* Step indicators */}
+      {(isActive || isDone) && (
+        <div className="flex gap-1 mb-2">
+          {config.steps.map((step, idx) => (
+            <div
+              key={step}
+              className="flex-1 flex flex-col items-center"
+              title={step}
+            >
+              <div
+                className={`h-1 w-full rounded-full transition-all duration-300 ${
+                  idx < activeStep
+                    ? 'bg-[var(--green-400)]'
+                    : idx === activeStep && isActive
+                    ? 'bg-[var(--cyan-400)] animate-pulse'
+                    : 'bg-white/[0.08]'
+                }`}
+              />
+              <span className={`text-[9px] mt-1 truncate max-w-full ${
+                idx < activeStep
+                  ? 'text-[var(--green-400)]'
+                  : idx === activeStep && isActive
+                  ? 'text-[var(--cyan-400)]'
+                  : 'text-[var(--text-muted)]'
+              }`}>
+                {step}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Progress bar */}
       {agent.progress !== undefined && agent.progress > 0 && (
